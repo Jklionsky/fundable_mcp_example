@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "total_tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "pass_rate": 0,
+    "timestamp": "2025-12-29T07:12:23.540Z"
+  },
+  "tests": [
+    {
+      "test_id": 8,
+      "question": "for company Paradigm Health, list all rounds, the date, valuation, lead investor, and article source",
+      "grade": "fail",
+      "reasoning": "The agent failed to answer the core question regarding funding rounds for 'Paradigm Health'. Its approach was to repeatedly search for the organization itself, but it never progressed to querying for funding deals, articles, or investors, which was the main objective of the task. The agent's queries only focused on finding the organization ID, and it concluded it couldn't find 'Paradigm Health' directly. This indicates a fundamental flaw in its execution pipeline where it got stuck on the initial identification phase. While the number of calls was within the expected range (3 calls, expected <=3), all calls were effectively redundant attempts to find the same initial entity, and none moved towards gathering the requested financial data. The expected approach clearly outlined steps to filter deals and join related tables, none of which were attempted by the agent.",
+      "tools_called_num": 3,
+      "tools_called_expected": 3,
+      "answer": "I could not find a company named \"Paradigm Health\" in the database. However, I found a few organizations that contain the word \"Paradigm\" and are related to \"Health\" in their description:\n\n**Companies:**\n*   **ATAI Life Sciences** (domain: atai.life) - \"ATAI Life Sciences is a biotech platform that acquires, incubates, and develops psychedelic and non-psychedelic therapeutics and data/AI platforms to advance treatments for depression, anxiety, addiction and mental-health disorders.\"\n\n**Investors:**\n*   **ATAI Life Sciences** (domain: atai.life) - \"atai Life Sciences is a clinical-stage biopharmaceutical company focused on transforming the treatment of mental health disorders. They leverage a decentralized platform approach to develop and accelerate innovative therapeutics for conditions such as depression, anxiety, and addiction.\"\n*   **The March Fund** (domain: marchgp.com) - \"The March Fund is a thematic venture capital firm focused on industry paradigm shifts enabled by exponential technology, particularly in the food, beverage, and retail sectors. They are committed to creating and scaling new technologies that address the legacy food system's impact on planetary health.\"\n*   **Physic Ventures** (domain: physicventures.com) - \"...Our strategy is to capitalize on major economic, social and political trends shaping the landscape of personal and planetary health, including the rapid migration toward a consumer-driven, prevention-oriented 'self-care' paradigm.\"\n\nCould you please clarify if you meant one of these organizations, or if you have an alternative name or more details for \"Paradigm Health\"?",
+      "expected_answer": "Jan 29th 2023 Series A $203M led by ARCH Venture Partners and General Catalyst (https://www.finsmes.com/2023/01/paradigm-raises-203m-in-series-a-funding.html). Dec 4 2025 Series B $78B led by ARCH Venture Partners (https://www.prnewswire.com/news-releases/paradigm-health-raises-78-million-series-b-to-make-clinical-trials-part-of-routine-care-across-the-us-and-globally-302632924.html). Valuations not disclosed in either.",
+      "sql_queries": [
+        "\nSELECT\n  id,\n  name,\n  domain,\n  short_description,\n  is_investor\nFROM organizations\nWHERE SEARCH(organizations, 'Paradigm Health')\nAND is_investor = FALSE\nLIMIT 10;\n",
+        "\nSELECT\n  id,\n  name,\n  domain,\n  short_description,\n  is_investor\nFROM organizations\nWHERE SEARCH(organizations, 'Paradigm')\nAND is_investor = FALSE\nLIMIT 10;\n",
+        "\nSELECT\n  id,\n  name,\n  domain,\n  short_description,\n  is_investor\nFROM organizations\nWHERE SEARCH(organizations, 'Paradigm Health')\nLIMIT 10;\n"
+      ],
+      "expected_path": "Discover Paradigm organization ID using WHERE (LOWER(name) LIKE '%paradigm%' OR LOWER(short_description) LIKE '%paradigm health%') since company name may differ from marketing name. Filter deals by organization_id, join articles and institutional_investments to get round, date, valuation, lead investors, and article source."
+    }
+  ]
+}

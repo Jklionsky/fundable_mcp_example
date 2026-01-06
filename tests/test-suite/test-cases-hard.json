@@ -1,0 +1,65 @@
+[
+  {
+    "id": 1,
+    "question": "what are some seed stage companies whos founder went to mit sloan and y combinator invested in them",
+    "max_tool_calls": 6,
+    "expected_path_description": "Discover MIT in linkedin_education, join to linkedin_person_education to find alumni, discover Y Combinator (is_investor=TRUE), join institutional_investments to find YC portfolio companies, join organization_associations WHERE is_current=TRUE to find current employees at those companies, COUNT distinct people.",
+    "expected_answer": "Deasie founder Mikko Peiponen went to MIT Sloan School of Management and Y Combinator invested in them"
+  },
+  {
+    "id": 2,
+    "question": "what is openais valuation since start of 2025: for each fundraise what was their valuation",
+    "max_tool_calls": 4,
+    "expected_path_description": "Discover OpenAI in organizations (domain = 'openai.com'), join to valuations to get valuation history",
+    "expected_answer": "In march 2025: raises $40B at $300B valuation, in August raised $8.3B at $300B, in Oct had secondary selling $6.6B at $500B. Most recent $1B raise in Dec 2025 didnt' have valuation attached. "
+  },
+  {
+    "id": 3,
+    "question": "i want to talk to people on the sales leadership team at pave the comp platform. Who are some people i can speak to and their contact info (email, phone, linkedin)",
+    "max_tool_calls": 5,
+    "expected_path_description": "Discover Pave in organizations (domain = 'pave.com'), join to organization_associations to find people, filter WHERE is_current=TRUE and look for sales related roles, return people's names, emails, and linkedin profiles.",
+    "expected_answer": "You can talk to VP of Sales Armand Farrokh (https://www.linkedin.com/in/armand-farrokh/) email: afarrokh@30mpc.com  or Harry Lort-Phillips (https://www.linkedin.com/in/harry-lort-phillips/) email: harry@pave.com"
+  },
+  {
+    "id": 4,
+    "question": "Find companies that raised Series B within 6 months of Series A that are US based and have raised at least $150M (both rounds in 2025)",
+    "max_tool_calls": 3,
+    "expected_path_description": "Self-join deals table (d1 and d2) on organization_id, filter d1 WHERE financing_type = 'SERIES_A' and d2 WHERE financing_type = 'SERIES_B', calculate time difference between d2.date and d1.date. CRITICAL: deals.date is TIMESTAMP type - use TIMESTAMP(DATE_SUB(d2.date, INTERVAL 6 MONTH)) <= d1.date for month-based comparisons. Join to organizations to get company names. Return company name, Series A date, Series B date, time difference.",
+    "expected_answer": "OpenEvidence — openevidence.com — $735.0M — 2025-02-24 → 2025-07-15 — 5 months (141 days) , fal — fal.ai — $587.0M — 2024-09-26 → 2025-02-13 — 5 months (140 days)  , Mercor — mercor.com — $483.6M — 2024-09-19 → 2025-02-20 — 5 months (154 days) , Apptronik — apptronik.com — $417.6M — 2025-02-13 → 2025-03-18 — 1 month (33 days) , Hippocratic AI — hippocraticai.com — $387.0M — 2024-09-19 → 2025-01-10 — 4 months (113 days)  , Chai Discovery — chaidiscovery.com — $200.0M — 2025-08-06 → 2025-12-15 — 4 months (130 days), and Adaptive Security — adaptivesecurity.com — $179.0M — 2025-09-18 → 2025-12-16 — 3 months (88 days)"
+  },
+  {
+    "id": 5,
+    "question": "For fintech companies what is an average valuation at series A stage in 2025 - provide some examples",
+    "max_tool_calls": 4,
+    "expected_path_description": "Discover industry_permalink in industry_classifications using SEARCH() with multiple terms ('fintech' OR 'financial services' OR 'financial technology'). Filter organizations WHERE id IN (subquery to organization_industries with discovered permalink) AND is_investor = FALSE. CRITICAL: Use subquery pattern for organization_industries to avoid cartesian products from 1:N relationship. Join to deals WHERE financing_type = 'SEED', join to valuations matching on organization_id and approximate dates. REMINDER: Valuation values are in millions. Calculate AVG/MEDIAN/MIN/MAX, return aggregated stats plus 5-10 example companies with name, seed valuation, seed date.",
+    "expected_answer": "Average Series A valuation for US-based fintech companies in 2025 (per Fundable data & our matching rules): $1,797 million (≈ $1.8B). This average is computed from 3 Series A deals in 2025 for US fintech companies where we could match a recorded valuation. Examples: Tempo — deal date 2025-10-17, Series A size: $500.0M, Matched valuation: $5,000.0M, Website: https://tempo.xyz/; Ostium — deal date 2025-12-04, Series A size: $24.0M, Matched valuation: $250.0M, Website: https://www.ostium.io; Strive Asset Management — deal date 2025-11-10, Series A size: $160.0M, Matched valuation: $141.0M, Website: https://www.strivefunds.com"
+  },
+  {
+    "id": 6,
+    "question": "which us-based investors have invested in at least 20 deals of asian companies in 2025",
+    "max_tool_calls": 4,
+    "expected_path_description": "Identify Asian country codes by looking at unique county codes, after getting that list. Then join institutional_investments to find deals, filter WHERE organization_id IN (subquery to organizations with discovered asian country codes) AND is_investor = TRUE and country_code = 'United States'. GROUP BY organization_id and name, COUNT deals. ORDER BY count DESC, LIMIT 20.",
+    "expected_answer": "Accel has done 31 deals in that time frame and Lightspeed Venture Partners has done 22 deals"
+  },
+  {
+    "id": 7,
+    "question": "Find founder teams where 3+ founders previously worked together at the same company at the same time (not including current company). Return all companies that were funded in 2025 that have this.",
+    "max_tool_calls": 4,
+    "expected_path_description": "Filter deals WHERE EXTRACT(YEAR FROM date) = 2025 to get funded companies. Join to organization_associations WHERE is_founder = TRUE to get founders. Join to linkedin_positions for each founder to get work history. Self-join linkedin_positions three ways (p1, p2, p3) WHERE p1.linkedin_company_id = p2.linkedin_company_id = p3.linkedin_company_id AND p1.person_id < p2.person_id < p3.person_id (avoids duplicate triples). Calculate overlap window: GREATEST(p1.start_date, p2.start_date, p3.start_date) <= LEAST(p1.end_date, p2.end_date, p3.end_date). Join to organizations and linkedin_company for names. Return startup name, startup_id, prior employer, founders who overlapped, overlap period.",
+    "expected_answer": "Results — for each company: (startup name — startup_id)\n- 406 Energy — e97b2ed2-6003-4717-b779-71a83868a4d3\n  • Prior employer: XCL Resources (linkedin id: xcl-resources)\n  • Founders who overlapped: Josh Sigler, Mark Graeve, Tom Kastens\n  • Overlap: 2018-09-01 → 2022-05-01\n\n- Catalogus — fb0a4be8-a8a1-45c9-a4e4-598b03472c4e\n  • Prior employer: ANS Commerce (anscommerce)\n  • Founders: Ankit Samria, Himanshu Dikshit, Vipin Singh\n  • Overlap: 2019-07-01 → 2019-09-01\n\n- Factor2 Energy — 79f58eb3-9f1b-4fbb-b673-cb4736e6ebe4\n  • Prior employer: Siemens (siemens)\n  • Founders: Felix Böhmer, Jörg Strohschein, Michael Wechsung\n  • Overlap examples: 2014-09-01 → 2016-06-01 and 2016-06-01 → 2017-09-01\n\n- Outfindo — 4d21dc9e-4033-414b-8288-cb05f1485d10\n  • Prior employer: foodora (foodora)\n  • Founders: Jan Mateju, Martin Chrz, Ondrej Bouda\n  • Overlap: 2016-05-01 → 2018-12-01\n\n- Peec AI — 43943b03-cbdc-489e-814b-807386ba8684\n  • Prior employer: Amazon (amazon)\n  • Founders: Gabriel Drabo, Marius Meiners, Tobias Siwonia\n  • Overlap: 2024-10-01 → 2024-12-01\n\n- Pipeshift — 91092a39-3395-4f30-a935-01288b80a016\n  • Prior employers: Amigo (youramigoapp) and Hult Prize Foundation (hult-prize-foundation)\n  • Founders: Arko Chattopadhyay, Enrique Ferrao, Pranav Reddy\n  • Overlaps: 2021-06-01 → 2022-12-01 (Amigo); 2022-06-01 → 2022-08-01 (Hult Prize)\n\n- Runnr.ai — 3cd51042-0d3f-40bf-b8cd-601cbf1e4abf\n  • Prior employer: Booking.com (booking.com)\n  • Founders: Maarten Fugers, Michiel de Vor, Steven Oliemans\n  • Multiple overlapping windows across 2011–2016 and 2013–2015\n\n- Swish — 4057c6f1-816e-492e-ad79-95041eb99550\n  • Prior employer: Pillow - DeFi For Everyone (pillowfund)\n  • Founders: Aniket Shah, Saran S, Ujjwal Sukheja\n  • Overlaps: 2022-01-01 → 2022-03-01\n\n- Swapp — ae6-7bfd-4b9f-8639-37e20c95fd66\n  • Prior employer: Peak Games (peak)\n  • Founders: Berk Yaşar, Emre Yanık, Simay Kahraman\n  • Overlaps: 2019-11-01 → 2022-01-01; 2022-01-01 → 2022-10-01\n\n- VyomIC — a623bd14-6574-4d21-86c6-5bce553c6c88\n  • Prior employer: Avishkar Hyperloop (avishkarhyperloop)\n  • Founders: Anurag Patil, Lokesh Kabdal, Vibhor Jain\n  • Overlap: 2021-08-01 → 2022-08-01"
+  },
+  {
+    "id": 8,
+    "question": "Find company with most secondary market transactions and show which investors bought secondary shares",
+    "max_tool_calls": 2,
+    "expected_path_description": "Filter deals WHERE financing_type = 'SECONDARY_MARKET', COUNT(DISTINCT deals.id) grouped by organization_id. REMINDER: SECONDARY_MARKET represents existing shares traded (not new capital raised) but IS included in deal counts. Join to organizations to get company names. For top companies, join deals → institutional_investments → organizations (investor) to get investor names. CRITICAL: Multiple investors per deal creates 1:N - use STRING_AGG or ARRAY_AGG to concatenate investor names without cartesian products. ORDER BY secondary_transaction_count DESC. Return company name, number of secondary transactions, aggregated list of investors, transaction dates.",
+    "expected_answer": "OpenAI (openai.com) has 3 secondary deals -  Top investors who bought secondary shares (deal counts): Thrive Capital (3), Founders Fund (1), K2 Global (1), Andreessen Horowitz (1), Dragoneer Investment Group (1), MGX (1), T. Rowe Price Associates (1), Sequoia Capital (1), SoftBank (1)"
+  },
+  {
+    "id": 9,
+    "question": "Which investor has the highest led deal percentage in 2024 while taking part in at least 10 deals in 2024r",
+    "max_tool_calls": 3,
+    "expected_path_description": "Filter deals WHERE EXTRACT(YEAR FROM date) = 2024. Join institutional_investments → organizations (investor). GROUP BY investor organization_id and name. Calculate: COUNT(DISTINCT CASE WHEN ii.lead_investor = TRUE THEN deals.id END) / COUNT(DISTINCT deals.id) * 100 AS lead_percentage. Filter HAVING COUNT(DISTINCT deals.id) >= 10 (minimum activity threshold). CRITICAL: lead_investor flag distinguishes lead vs participant roles. REMINDER: Deal counts INCLUDE SECONDARY_MARKET. ORDER BY lead_percentage DESC LIMIT 1. Return investor name, total deals in 2024, led deals count, led percentage.",
+    "expected_answer": "- CIBC Innovation Banking — 34 deals participated, 34 led (lead rate = 100%), Leonid Capital Partners — 12 deals participated, 12 led (100%) , Decathlon Capital Partners — 10 deals participated, 10 led (100%)  ,PeakSpan Capital — 10 deals participated, 10 led (100%)  ,Unicorn India Ventures — 10 deals participated, 10 led (100%)"
+  }
+]

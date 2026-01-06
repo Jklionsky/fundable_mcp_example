@@ -1,0 +1,45 @@
+{
+  "name": "mcp-ai-agent-example",
+  "version": "1.0.0",
+  "description": "Example AI agent using Vercel AI SDK with remote MCP server",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test:connection": "tsx src/test-connection.ts",
+    "test:agent": "tsx src/test-agent.ts",
+    "test:eval": "tsx tests/test-runner.ts",
+    "test:eval:simple": "tsx tests/test-runner.ts --suite=simple",
+    "test:eval:medium": "tsx tests/test-runner.ts --suite=medium",
+    "test:eval:hard": "tsx tests/test-runner.ts --suite=hard",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp",
+    "ai-sdk",
+    "agent",
+    "database"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.56",
+    "@ai-sdk/google": "^2.0.51",
+    "@ai-sdk/mcp": "^0.0.12",
+    "@ai-sdk/openai": "^2.0.88",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@types/js-yaml": "^4.0.9",
+    "ai": "^5.0.115",
+    "dotenv": "^17.2.3",
+    "js-yaml": "^4.1.1",
+    "mcp-remote": "^0.1.37",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

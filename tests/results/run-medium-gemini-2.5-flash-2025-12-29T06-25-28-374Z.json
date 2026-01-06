@@ -1,0 +1,26 @@
+{
+  "metadata": {
+    "total_tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "pass_rate": 0,
+    "timestamp": "2025-12-29T06:25:28.374Z"
+  },
+  "tests": [
+    {
+      "test_id": 8,
+      "question": "list all paradigm (the health care company) rounds, the date, valuation, lead investor, and article source",
+      "grade": "fail",
+      "reasoning": "The agent's performance failed due to a fundamental misidentification of the company in question. The prompt asked for 'Paradigm (the health care company)', implying a company with 'Paradigm' in its name (e.g., Paradigm Health as suggested by the example answer). However, the agent identified 'Quarry Thera' as 'the Paradigm healthcare company' and provided information for it. While the SQL queries themselves were well-structured and efficient (2 calls, within the expected ≤3), the output is incorrect because it pertains to the wrong entity. The first step of identifying the correct organization is crucial for this task, and the agent failed at it.",
+      "tools_called_num": 2,
+      "tools_called_expected": 3,
+      "answer": "For Quarry Thera, which was identified as the 'Paradigm' healthcare company, there is one known funding round:\n\n*   **Round Type:** Series A\n*   **Date:** 2025-11-28\n*   **Deal Size:** $32.0 million USD\n*   **Lead Investor:** Not specified\n*   **Article Source:** https://www.phirda.com/artilce_40868.html\n*   **Valuation:** Not available/disclosed for this specific round in the dataset.",
+      "expected_answer": "Jan 29th 2023 Series A $203M led by ARCH Venture Partners and General Catalyst (https://www.finsmes.com/2023/01/paradigm-raises-203m-in-series-a-funding.html). Dec 4 2025 Series B $78B led by ARCH Venture Partners (https://www.prnewswire.com/news-releases/paradigm-health-raises-78-million-series-b-to-make-clinical-trials-part-of-routine-care-across-the-us-and-globally-302632924.html). Valuations not disclosed in either.",
+      "sql_queries": [
+        "\nSELECT\n  id,\n  name,\n  domain,\n  short_description,\n  long_description,\n  is_investor\nFROM\n  organizations\nWHERE\n  SEARCH(organizations, 'Paradigm')\n  AND is_investor = FALSE\nLIMIT 10;\n",
+        "\nSELECT\n  d.financing_type AS round_type,\n  FORMAT_TIMESTAMP('%Y-%m-%d', d.date) AS round_date,\n  d.size_usd AS deal_size_usd_millions,\n  STRING_AGG(DISTINCT CASE WHEN ii.lead_investor = TRUE THEN o_investor.name END, ', ') AS lead_investors,\n  MAX(CASE WHEN a.is_primary = TRUE THEN a.link END) AS article_source,\n  ROUND(v.valuation_usd, 2) AS valuation_usd_millions\nFROM\n  deals d\nJOIN\n  organizations o_company ON d.organization_id = o_company.id\nLEFT JOIN\n  institutional_investments ii ON d.id = ii.deal_id\nLEFT JOIN\n  organizations o_investor ON ii.organization_id = o_investor.id\nLEFT JOIN\n  articles a ON d.canonical_deal_id = a.canonical_deal_id\nLEFT JOIN\n  valuations v ON d.organization_id = v.organization_id\n  AND ABS(TIMESTAMP_DIFF(v.date, d.date, DAY)) <= 90 -- Valuation date within 90 days of deal date\nWHERE\n  o_company.id = '102a8ce0-8c47-41d1-b0d8-7c97d8b3e36e'\n  AND o_company.is_investor = FALSE\nGROUP BY\n  d.financing_type,\n  d.date,\n  d.size_usd,\n  v.valuation_usd\nORDER BY\n  d.date DESC;\n"
+      ],
+      "expected_path": "Identify Paradigm organization ID through discovery using SEARCH(organizations, 'paradigm') combined with healthcare industry filter via organization_industries. Filter deals by Paradigm organization_id while joining on articles and institutional_investments to get the round, date, lead investor, and article source"
+    }
+  ]
+}

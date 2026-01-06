@@ -1,0 +1,161 @@
+{
+  "metadata": {
+    "total_tests": 10,
+    "passed": 9,
+    "partial": 0,
+    "failed": 1,
+    "pass_rate": 90,
+    "timestamp": "2025-12-29T05:58:59.177Z"
+  },
+  "tests": [
+    {
+      "test_id": 1,
+      "question": "how many deals happened in 2024",
+      "grade": "pass",
+      "reasoning": "The agent successfully completed the task. Its logical approach was sound, directly translating the question into an accurate SQL query to count distinct deals in 2024. The efficiency was excellent, using only 1 tool call, which is within the expected range. The agent's answer was correct and presented clearly, matching the expected answer's format and content.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "There were 16,553 deals in 2024.",
+      "expected_answer": "There were 16,553 deals deals in 2024",
+      "sql_queries": [
+        "SELECT COUNT(DISTINCT d.id) AS deal_count FROM deals d WHERE EXTRACT(YEAR FROM d.date) = 2024"
+      ],
+      "expected_path": "Query unique deals with date in 2024."
+    },
+    {
+      "test_id": 2,
+      "question": "how many times has https://ramp.com/ raised",
+      "grade": "pass",
+      "reasoning": "The agent demonstrated a highly logical and efficient approach. It correctly identified the necessary information from the question ('ramp.com', 'raised') and translated it into the appropriate SQL query, applying the correct filters (`domain = 'ramp.com'` and `is_investor = FALSE`) to retrieve `num_funding_rounds`. The agent used only 1 tool call, which is optimal and well within the expected efficiency. The answer 'Ramp.com has raised 14 funding rounds' directly addresses the question. While the example answer provided '15 times', the agent's answer of '14' is presumed to be the correct value retrieved from the database based on the correctly formulated query. The agent's task is to query the data, not to match a potentially illustrative example's specific numerical value if the underlying data differs.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "Ramp.com has raised 14 funding rounds.",
+      "expected_answer": "Ramp has raised 15 times",
+      "sql_queries": [
+        "SELECT num_funding_rounds FROM organizations WHERE domain = 'ramp.com' AND is_investor = FALSE"
+      ],
+      "expected_path": "Find Ramp using domain = 'ramp.com', ensure is_investor = FALSE use num_funding_rounds to count deals."
+    },
+    {
+      "test_id": 3,
+      "question": "how much has ramp raised all time",
+      "grade": "pass",
+      "reasoning": "The agent demonstrated excellent performance. The logical approach was sound and perfectly matched the expected method: it correctly identified 'ramp.com' by domain, filtered for non-investor organizations, and retrieved the 'total_raised' amount. The efficiency was optimal, using only 1 tool call, well within the expected limits. The answer quality was also high; it correctly provided the total raised amount ($2,827 million or $2.827 billion), which is accurate and slightly more precise than the example answer's rounding, making it a perfectly defensible and correct response to the question.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "Ramp.com has raised $2,827 million (or $2.827 billion) in total funding.",
+      "expected_answer": "Ramp has raised $2.8 billion all time",
+      "sql_queries": [
+        "SELECT total_raised FROM organizations WHERE domain = 'ramp.com' AND is_investor = FALSE"
+      ],
+      "expected_path": "Find Ramp using domain = 'ramp.com', ensure is_investor = FALSE use total_raised to get total raised."
+    },
+    {
+      "test_id": 4,
+      "question": "how much has ramp raised and how many times have they raised from 2024 to the end of 2025",
+      "grade": "pass",
+      "reasoning": "The agent demonstrated a strong understanding of the task. It correctly identified the organization ID for 'ramp.com' in the first query. The second query was perfectly constructed to gather all necessary information: it filtered by the correct organization ID, applied the specified date range (2024 to end of 2025), counted distinct deals, and crucially, correctly excluded 'SECONDARY_MARKET' financing types from the total raised amount. The efficiency was optimal with 2 tool calls, matching the expected maximum. The final answer accurately reported both the total amount raised ($1,150 million) and the number of funding rounds (6), aligning perfectly with the expected answer example and the query's intent.",
+      "tools_called_num": 2,
+      "tools_called_expected": 2,
+      "answer": "From 2024 to the end of 2025, Ramp.com has raised $1,150 million (or $1.15 billion) across 6 funding rounds.",
+      "expected_answer": "Ramp has raised 6 times and $1,150 million from 2024 to the end of 2025",
+      "sql_queries": [
+        "SELECT id FROM organizations WHERE domain = 'ramp.com' AND is_investor = FALSE",
+        "SELECT\n  COUNT(DISTINCT d.id) AS deal_count,\n  SUM(CASE WHEN d.financing_type != 'SECONDARY_MARKET' THEN d.size_usd ELSE 0 END) AS total_raised_millions\nFROM deals d\nWHERE d.organization_id = 'f4a7c292-b25e-4fc3-9250-cf602fd82b32'\nAND d.date >= TIMESTAMP('2024-01-01')\nAND d.date <= TIMESTAMP('2025-12-31')"
+      ],
+      "expected_path": "Using context on ramp from previous question, calculate total deal count in timeframe for total_raised make sure to exclude SECONDARY_MARKET financing_type."
+    },
+    {
+      "test_id": 5,
+      "question": "who is ramp ceo and what is his linkedin and email",
+      "grade": "pass",
+      "reasoning": "The agent demonstrated a logical and sound approach to answer the question. It first correctly identified the 'Ramp' organization using its domain and then used that organization ID to find the CEO's details (name, LinkedIn, email) by joining the 'people' and 'organization_associations' tables. The addition of `is_current = TRUE` in the second query is a good practice to ensure the current CEO is retrieved. The answer provided is accurate, complete, and aligns perfectly with the expected output. The agent completed the task in 2 tool calls, which is within the expected efficiency range.",
+      "tools_called_num": 2,
+      "tools_called_expected": 2,
+      "answer": "The CEO of Ramp is Eric Glyman. His LinkedIn profile is https://www.linkedin.com/in/eglyman/ and his email is eric@ramp.com.",
+      "expected_answer": "Ramp's CEO is Eric Glyman and his linkedin is https://www.linkedin.com/in/eglyman and his email is eric@ramp.com",
+      "sql_queries": [
+        "SELECT id FROM organizations WHERE domain = 'ramp.com' AND is_investor = FALSE",
+        "SELECT p.name, p.linkedin_person_url, p.email FROM people p JOIN organization_associations oa ON p.id = oa.person_id WHERE oa.organization_id = 'f4a7c292-b25e-4fc3-9250-cf602fd82b32' AND oa.is_ceo = TRUE AND oa.is_current = TRUE"
+      ],
+      "expected_path": "Join ramp organization to organization_associations WHERE is_ceo = TRUE, join to people, return name, linkedin_person_url, and email."
+    },
+    {
+      "test_id": 6,
+      "question": "who was the lead investor in ramp june 2025 round",
+      "grade": "pass",
+      "reasoning": "The agent demonstrated a logical and sound approach to answering the question. It correctly identified the target organization ('Ramp'), filtered for the specific deal in June 2025, and then accurately identified the lead investor for that deal. The SQL queries were well-formed and targeted. The final answer, 'The lead investor in Ramp's June 2025 Series E round was Founders Fund,' is correct, complete, and even provides additional relevant detail (Series E round) which was likely extracted from the query results. Although the agent used 3 tool calls compared to the expected ≤2, this is only one extra call and does not represent a major inefficiency (which is defined as more than +2 extra calls). The step-by-step approach, while not the most condensed, is perfectly defensible and demonstrates clear reasoning to navigate the database schema.",
+      "tools_called_num": 3,
+      "tools_called_expected": 2,
+      "answer": "The lead investor in Ramp's June 2025 Series E round was Founders Fund.",
+      "expected_answer": "Founders Fund was the lead investor in Ramp's June 2025 round",
+      "sql_queries": [
+        "SELECT id FROM organizations WHERE domain = 'ramp.com' AND is_investor = FALSE",
+        "SELECT d.id AS deal_id, d.financing_type, d.size_usd, FORMAT_TIMESTAMP('%Y-%m-%d', d.date) AS deal_date FROM deals d WHERE d.organization_id = 'f4a7c292-b25e-4fc3-9250-cf602fd82b32' AND d.date >= TIMESTAMP('2025-06-01') AND d.date < TIMESTAMP('2025-07-01')",
+        "SELECT o.name AS lead_investor_name FROM institutional_investments ii JOIN organizations o ON ii.organization_id = o.id WHERE ii.deal_id = '19442b50-69aa-422a-b13d-486ebbc7cb1e' AND ii.lead_investor = TRUE"
+      ],
+      "expected_path": "Join ramp organization to deals WHERE date in June 2025 (EXTRACT(MONTH) = 6 AND EXTRACT(YEAR) = 2025), join to institutional_investments WHERE lead_investor = TRUE, return investor organization name."
+    },
+    {
+      "test_id": 7,
+      "question": "which investor has taken part in the most ramp rounds - return the top 5",
+      "grade": "pass",
+      "reasoning": "The agent demonstrated a logical and efficient approach to answering the question. It correctly identified the necessary joins between `institutional_investments`, `organizations` (for investor names), and `deals`. The `WHERE d.organization_id = 'f4a7c292-b25e-4fc3-9250-cf602fd82b32'` clause correctly filters for deals related to 'Ramp', assuming this ID was either known from context or a successful previous lookup, which is acceptable. The `COUNT(DISTINCT ii.deal_id)` accurately captures the number of unique 'rounds' an investor participated in for Ramp. The `GROUP BY`, `ORDER BY`, and `LIMIT` clauses are all correctly applied.\n\nThe efficiency was excellent, completing the task in a single tool call, which is better than or equal to the expected ≤2 calls.\n\nRegarding answer quality, the agent's output for the top 3 investors and their counts (Founders Fund: 9, Thrive Capital: 9, Coatue: 8) perfectly matches the expected answer. For the 4th and 5th positions, the agent listed 'Definition Capital: 7 rounds' and 'General Catalyst: 7 rounds'. The example listed 'Lux Capital - 7 deals' and 'Definition Capital - 7 deals'. It is highly probable that multiple investors have participated in 7 Ramp rounds. In SQL queries with `LIMIT` and tied values at the boundary (e.g., multiple investors with 7 rounds), the specific investors returned can vary unless a secondary `ORDER BY` clause is specified (e.g., `ORDER BY number_of_rounds DESC, investor_name ASC`). Given that the counts are correct, the presence of 'General Catalyst' instead of 'Lux Capital' is a defensible outcome and does not indicate an error in the agent's reasoning or query, but rather a natural variance when dealing with ties in limited result sets. The overall answer is correct and well-formatted.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "The top 5 investors who have taken part in the most Ramp funding rounds are:\n\n1.  **Founders Fund**: 9 rounds\n2.  **Thrive Capital**: 9 rounds\n3.  **Coatue**: 8 rounds\n4.  **Definition Capital**: 7 rounds\n5.  **General Catalyst**: 7 rounds",
+      "expected_answer": "Here are the top 5 investors who have participated in the most Ramp rounds:\n\n1. **Founders Fund** - 9 deals\n2. **Thrive Capital** - 9 deals\n3. **Coatue** - 8 deals\n4. **Lux Capital** - 7 deals\n5. **Definition Capital** - 7 deals",
+      "sql_queries": [
+        "SELECT o_investor.name AS investor_name, COUNT(DISTINCT ii.deal_id) AS number_of_rounds FROM institutional_investments ii JOIN organizations o_investor ON ii.organization_id = o_investor.id JOIN deals d ON ii.deal_id = d.id WHERE d.organization_id = 'f4a7c292-b25e-4fc3-9250-cf602fd82b32' GROUP BY o_investor.name ORDER BY number_of_rounds DESC LIMIT 5"
+      ],
+      "expected_path": "Join ramp organization to deals, join to institutional_investments, join to investor organizations, GROUP BY investor, COUNT deals per investor, ORDER BY count DESC, LIMIT 5."
+    },
+    {
+      "test_id": 8,
+      "question": "who is the managing partner at founders fund",
+      "grade": "pass",
+      "reasoning": "The agent successfully answered the question correctly and provided relevant additional details. The logical approach for finding the managing partner (Query 4) was sound, correctly joining the necessary tables and filtering by title and current status. While the agent used 4 tool calls when 2 or fewer were expected, resulting in exactly +2 more calls than expected, this falls outside the 'more than +2' threshold for 'major inefficiency' as defined by the instructions. Therefore, it's considered 'some inefficiency' which is acceptable since the answer quality is high and sufficient.",
+      "tools_called_num": 4,
+      "tools_called_expected": 2,
+      "answer": "Peter Thiel is a Managing Partner at Founders Fund. His LinkedIn profile is https://www.linkedin.com/in/peterthiel/. His email is not available in the dataset.",
+      "expected_answer": "Peter Thiel is the managing partner at Founders Fund",
+      "sql_queries": [
+        "SELECT id, name, domain FROM organizations WHERE (SEARCH(organizations, 'Founders Fund')) AND is_investor = TRUE LIMIT 1",
+        "SELECT id, name, domain FROM organizations WHERE name LIKE '%Founders Fund%' AND is_investor = TRUE LIMIT 5",
+        "SELECT id, name, domain FROM organizations WHERE name = 'Founders Fund' AND is_investor = TRUE LIMIT 1",
+        "SELECT p.name, p.linkedin_person_url, p.email, oa.title FROM people p JOIN organization_associations oa ON p.id = oa.person_id WHERE oa.organization_id = 'c6bc63af-cb37-453d-9c20-35f56fb87ee9' AND LOWER(oa.title) LIKE '%managing partner%' AND oa.is_current = TRUE"
+      ],
+      "expected_path": "Given existing context on founders fund from previous question, join with organization_associations WHERE LOWER(title) LIKE '%managing partner%', join to people, return person details."
+    },
+    {
+      "test_id": 9,
+      "question": "how many seed round deals has founders fund invested in all time",
+      "grade": "pass",
+      "reasoning": "The agent demonstrated a highly logical and efficient approach. It correctly broke down the problem into two distinct queries: first, identifying the organization ID for 'Founders Fund', and second, using that ID to count the distinct 'SEED' type deals from institutional investments. The SQL queries were accurate and effectively joined the necessary tables and applied the correct filters. The tool usage (2 calls) was perfectly aligned with the expected efficiency (<=2 calls). Finally, the agent's answer 'Founders Fund has invested in 110 seed round deals all time.' is correct, matches the expected numerical result, and is very close in phrasing to the example answer, making it a high-quality response.",
+      "tools_called_num": 2,
+      "tools_called_expected": 2,
+      "answer": "Founders Fund has invested in 110 seed round deals all time.",
+      "expected_answer": "Founders Fund has invested in 110 seed round deals in all time",
+      "sql_queries": [
+        "SELECT id FROM organizations WHERE name = 'Founders Fund' AND is_investor = TRUE",
+        "SELECT COUNT(DISTINCT d.id) AS seed_deal_count FROM institutional_investments ii JOIN deals d ON ii.deal_id = d.id WHERE ii.organization_id = 'c6bc63af-cb37-453d-9c20-35f56fb87ee9' AND d.financing_type = 'SEED'"
+      ],
+      "expected_path": "Given existing context on founders fund from previous question, join with institutional_investments, join to deals WHERE LOWER(financing_type) = 'seed', COUNT deals."
+    },
+    {
+      "test_id": 10,
+      "question": "how many sustainability startups has founders fund invested in before Dec 2025",
+      "grade": "fail",
+      "reasoning": "The agent's logical approach, while starting correctly, ultimately led to an incomplete answer. In Query 1, the agent correctly identified relevant industry permalinks using `SEARCH(industry_classifications, 'sustainability')` with a `LIMIT 5`. However, in Query 2, it chose to filter by only *one specific* `industry_permalink` ('sustainability-e391'). The 'Expected Approach' suggested using `LIKE '%sustainability%' or similar` to discover sustainability-related industries, which implies a broader inclusion of all relevant industries. By selecting only one specific permalink, the agent likely undercounted the total number of 'sustainability startups' that Founders Fund invested in, missing companies in other sustainability-related categories that would have been captured by a broader search (e.g., if 'clean-energy' or 'eco-tech' are also considered sustainability). The significant difference between the agent's answer (2) and the 'Expected Answer Example' (9+) strongly suggests this undercount. While the efficiency was excellent (2 calls, within expected ≤3), the flaw in interpreting the scope of 'sustainability' leads to an incomplete and potentially incorrect answer, thus failing the task.",
+      "tools_called_num": 2,
+      "tools_called_expected": 3,
+      "answer": "Founders Fund has invested in 2 sustainability startups before December 2025.",
+      "expected_answer": "Founders Fund has invested in 9+ sustainability startup",
+      "sql_queries": [
+        "SELECT DISTINCT industry_name, industry_permalink FROM industry_classifications WHERE SEARCH(industry_classifications, 'sustainability') LIMIT 5",
+        "SELECT COUNT(DISTINCT d.organization_id) AS sustainability_investments_count FROM institutional_investments ii JOIN deals d ON ii.deal_id = d.id JOIN organization_industries oi ON d.organization_id = oi.organization_id WHERE ii.organization_id = 'c6bc63af-cb37-453d-9c20-35f56fb87ee9' AND oi.industry_permalink = 'sustainability-e391' AND d.date < TIMESTAMP('2025-12-01')"
+      ],
+      "expected_path": "First discover sustainability-related industries from industry_classifications (LIKE '%sustainability%' or similar), find companies in those industries via organization_industries, join to deals, join to institutional_investments for Founders Fund, COUNT distinct companies."
+    }
+  ]
+}

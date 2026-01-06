@@ -1,0 +1,26 @@
+{
+  "metadata": {
+    "total_tests": 1,
+    "passed": 1,
+    "partial": 0,
+    "failed": 0,
+    "pass_rate": 100,
+    "timestamp": "2025-12-26T20:02:05.196Z"
+  },
+  "tests": [
+    {
+      "test_id": 1,
+      "question": "how many deals happened in 2024",
+      "grade": "pass",
+      "reasoning": "The agent used a direct, sound approach: a single SQL query that counts distinct deal IDs with dates in the 2024 range (d.date >= '2024-01-01' AND d.date < '2025-01-01'), which correctly captures all timestamps in calendar year 2024. They used only one tool call (efficient) and returned a clear numeric result (16,553). The agent also sensibly noted the interpretation — that this counts all financings recorded in the deals table during 2024 (including all financing types and secondary market deals) — which is a defensible interpretation of the question. There are no evident logical errors or inefficiencies, so the task is successfully completed.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "There were 16,553 deals in 2024.\n\nNote: this counts all financings recorded in the deals table between 2024-01-01 and 2024-12-31 (includes all financing types, including secondary market deals).",
+      "expected_answer": "There were 16,553 deals deals in 2024",
+      "sql_queries": [
+        "SELECT COUNT(DISTINCT d.id) AS deal_count\nFROM deals d\nWHERE d.date >= TIMESTAMP('2024-01-01')\n  AND d.date < TIMESTAMP('2025-01-01')"
+      ],
+      "expected_path": "Query unique deals with date in 2024."
+    }
+  ]
+}
