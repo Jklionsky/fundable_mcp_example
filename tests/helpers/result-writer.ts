@@ -17,7 +17,7 @@ import { TestResult, TestSummary, FailureDetail, UnifiedTestResult, UnifiedResul
  * Save test results to file (unified format)
  *
  * Creates a timestamped JSON file with metadata and test results.
- * Updates 'latest.json' symlink to point to most recent run.
+ * Results are organized into subdirectories by test suite.
  *
  * @param results Test results to save
  * @param suiteName Test suite name (easy, medium, hard, or all)
@@ -31,19 +31,23 @@ export async function saveResults(
   modelName: string = 'unknown',
   outputDir: string = './tests/results'
 ): Promise<string> {
-  // Ensure output directory exists
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-
   // Sanitize model name for filename (remove slashes, spaces, etc.)
   const sanitizedModel = modelName.replace(/[^a-zA-Z0-9-_.]/g, '-').toLowerCase();
 
-  // Generate filename with suite, model, and timestamp
-  // Format: run-easy-gpt-4o-2024-12-18-15-30-00.json
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('.')[0];
-  const filename = `run-${suiteName}-${sanitizedModel}-${timestamp}.json`;
-  const filepath = path.join(outputDir, filename);
+  // Generate ISO timestamp for filename (replace : with - for filesystem compatibility)
+  const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
+
+  // New filename format: {model}-{timestamp}.json
+  const filename = `${sanitizedModel}-${timestamp}.json`;
+
+  // Determine subdirectory based on suite (easy, medium, hard, or all)
+  const subDir = path.join(outputDir, suiteName);
+  const filepath = path.join(subDir, filename);
+
+  // Ensure subdirectory exists (e.g., tests/results/easy/)
+  if (!fs.existsSync(subDir)) {
+    fs.mkdirSync(subDir, { recursive: true });
+  }
 
   // Build unified output
   const output = buildUnifiedResults(results);
@@ -51,15 +55,7 @@ export async function saveResults(
   // Write to file with pretty formatting
   fs.writeFileSync(filepath, JSON.stringify(output, null, 2));
 
-  // Update 'latest' symlink
-  const latestPath = path.join(outputDir, 'latest.json');
-  if (fs.existsSync(latestPath)) {
-    fs.unlinkSync(latestPath);
-  }
-  fs.symlinkSync(filename, latestPath);
-
   console.log(`\n💾 Results saved to: ${filepath}`);
-  console.log(`💾 Latest results: ${latestPath}`);
 
   return filepath;
 }

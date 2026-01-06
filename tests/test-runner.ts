@@ -15,11 +15,9 @@ import { TestCase, Evaluation, UnifiedTestResult } from './helpers/types.js';
 import { LanguageModel } from 'ai';
 import { config } from 'dotenv';
 import * as fs from 'fs';
-import { openai } from '@ai-sdk/openai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { google } from '@ai-sdk/google';
 import { saveResults, printSummary, buildUnifiedResults } from './helpers/result-writer.js';
 import { getPrompt } from '../src/prompt-loader.js';
+import { getModel } from '../src/helpers.js';
 
 /**
  * Context tools that don't count toward tool call limits
@@ -277,6 +275,7 @@ async function main() {
   const args = process.argv.slice(2);
   const suite = args.find(arg => arg.startsWith('--suite='))?.split('=')[1] || 'all';
   const testId = args.find(arg => arg.startsWith('--id='))?.split('=')[1];
+  const provider = args.find(arg => arg.startsWith('--provider='))?.split('=')[1] || null;
 
   // Validate environment
   const mcpServerUrl = process.env.MCP_SERVER_URL;
@@ -286,31 +285,13 @@ async function main() {
     process.exit(1);
   }
 
-  // Select models based on available API keys
-  let agentModel, evaluatorModel, modelName;
+  // Get the AI model using the same logic as the main app
+  // Provider can be specified via --provider flag, or auto-detected
+  const { model, modelName } = getModel(provider);
 
-  if (process.env.ANTHROPIC_API_KEY) {
-    const modelId = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4';
-    agentModel = anthropic(modelId);
-    evaluatorModel = anthropic(modelId);
-    modelName = modelId;
-  } else if (process.env.OPENAI_API_KEY) {
-    const modelId = process.env.OPENAI_MODEL || 'gpt-4o';
-    agentModel = openai(modelId);
-    evaluatorModel = openai(modelId);
-    modelName = modelId;
-  }
-  else if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    const modelId = process.env.GOOGLE_MODEL || "gemini-2.0-flash-exp";
-    agentModel = google(modelId);
-    evaluatorModel = google(modelId);
-    modelName = modelId;
-  }
-  else {
-    console.error('❌ No API key found');
-    console.error('   Please set either ANTHROPIC_API_KEY or OPENAI_API_KEY in .env');
-    process.exit(1);
-  }
+  // Use the same model for both agent and evaluator
+  const agentModel = model;
+  const evaluatorModel = model;
 
   // Validate suite parameter
   const validSuites = ['all', 'easy', 'medium', 'hard'];

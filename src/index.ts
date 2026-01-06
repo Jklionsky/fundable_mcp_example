@@ -1,10 +1,8 @@
 import { config } from "dotenv";
 import * as readline from "readline";
-import { openai } from "@ai-sdk/openai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
 import { AIAgent } from "./agent.js";
 import { getPrompt } from "./prompt-loader.js";
+import { parseArgs, getModel } from "./helpers.js";
 
 // Load environment variables
 config();
@@ -13,6 +11,8 @@ config();
  * Main CLI interface for the AI agent
  */
 async function main() {
+  // Parse command-line arguments
+  const cliOptions = parseArgs();
   // Validate environment variables
   const mcpServerUrl = process.env.MCP_SERVER_URL;
 
@@ -21,30 +21,8 @@ async function main() {
     process.exit(1);
   }
 
-  // Determine which AI provider to use
-  // Priority: Anthropic (Claude) > OpenAI > Google
-  let model;
-  let modelName = "Unknown";
-
-  if (process.env.ANTHROPIC_API_KEY) {
-    // Use Claude (Anthropic)
-    const modelId = process.env.ANTHROPIC_MODEL || "claude-sonnet-4";
-    model = anthropic(modelId);
-    modelName = `Claude (${modelId})`;
-  } else if (process.env.OPENAI_API_KEY) {
-    // Use OpenAI
-    const modelId = process.env.OPENAI_MODEL || "gpt-4o";
-    model = openai(modelId);
-    modelName = `OpenAI (${modelId})`;
-  } else if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    // Use Google (Gemini)
-    const modelId = process.env.GOOGLE_MODEL || "gemini-2.0-flash-exp";
-    model = google(modelId);
-    modelName = `Google (${modelId})`;
-  } else {
-    console.error("❌ No API key found. Set either ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY in .env file");
-    process.exit(1);
-  }
+  // Get the AI model based on CLI options or auto-detection
+  const { model, modelName } = getModel(cliOptions.provider);
 
   // Print welcome banner
   console.log("╔════════════════════════════════════════════════════════════╗");
@@ -62,7 +40,7 @@ async function main() {
     mcpServerUrl,
     model,
     maxSteps: 15,
-    verbose: true
+    verbose: cliOptions.verbose
   });
 
   try {

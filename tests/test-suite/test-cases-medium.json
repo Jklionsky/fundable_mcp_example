@@ -24,7 +24,7 @@
     "id": 4,
     "question": "how many google deepmind alumn are currently founders of companies",
     "max_tool_calls": 3,
-    "expected_path_description": "Find 'Google DeepMind' in linkedin_company using SEARCH(linkedin_company, 'google deepmind') OR SEARCH(linkedin_company, 'deepmind'), join to linkedin_positions to find people who worked there, join to organization_associations WHERE is_founder = TRUE AND is_current = TRUE, COUNT distinct people.",
+    "expected_path_description": "Find 'Google DeepMind' in linkedin_company join to linkedin_positions to find people who worked there, join to organization_associations WHERE is_founder = TRUE AND is_current = TRUE, COUNT distinct people.",
     "expected_answer": "10 Google DeepMind alumni are currently founders of companies"
   },
   {

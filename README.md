@@ -1,10 +1,8 @@
 # MCP AI Agent Example - Fundable VC Dataset
 
-Example implementation of an AI agent using **Vercel AI SDK** integrated with the **Fundable MCP server**. This repository demonstrates the power of MCP with minimal code modifications and relatively simple prompting.
-
 ## Overview
 
-This project demonstrates how to build a command-line AI agent that connects to the Fundable MCP server to query a comprehensive VC dataset (companies, investors, people, funding rounds) using natural language.
+This project demonstrates how to build a command-line AI agent using Vercel's AI SDK that connects to the Fundable MCP server to query a comprehensive VC dataset (companies, investors, people, funding rounds) using natural language.
 
 **Key Purpose:** This is intentionally a straightforward example showing what you can accomplish with MCP without complex prompting or extensive code modifications. The simplicity demonstrates MCP's power - **downstream users should add more advanced prompting techniques for production use** (see Production Considerations below).
 
@@ -52,16 +50,16 @@ MCP_SERVER_URL=https://fundable_mcp.jacob-57a.workers.dev/mcp
 
 # AI Provider (choose one - comment out unused providers)
 OPENAI_API_KEY=sk-your-api-key-here
-OPENAI_MODEL=gpt-4o  # Optional
-
-# ANTHROPIC_API_KEY=sk-ant-your-api-key-here
-# ANTHROPIC_MODEL=claude-sonnet-4-20250514
+OPENAI_MODEL=gpt-5-mini  # Optional
 
 # GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
-# GOOGLE_MODEL=gemini-2.5-flash
-```
+# GOOGLE_MODEL=gemini-3-flash
 
-**Provider Priority:** Anthropic → OpenAI → Google (uses first available)
+# ANTHROPIC_API_KEY=sk-your-api-key-here
+# ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
+
+# Reccomend using openai model for highest accuracy + tool call efficiency. Gemini flash models tend to offer best combination of speed + accuracy.
+```
 
 ### Running the Agent
 
@@ -69,12 +67,37 @@ OPENAI_MODEL=gpt-4o  # Optional
 # Test MCP server connection
 npm run test:connection
 
-# Run interactive CLI
+# Run interactive CLI (auto-detects provider)
 npm run dev
+
+# Run with specific provider
+npm start -- --provider openai
+npm start -- --provider anthropic
+npm start -- --provider google
+
+# Run with verbose logging
+npm start -- --verbose
+npm start -- -v
+
+# Combine options
+npm start -- --provider openai --verbose
+
+# Show all available options
+npm start -- --help
 
 # Build for production
 npm run build && npm start
 ```
+
+### CLI Options
+
+The agent supports the following command-line options:
+
+- **`-p, --provider <name>`** - Specify AI provider: `openai`, `anthropic`, or `google`
+  - Default: Auto-detect based on available API keys (priority: Google → OpenAI → Anthropic)
+- **`-v, --verbose`** - Enable verbose logging to see tool calls and reasoning
+  - Default: `false`
+- **`-h, --help`** - Show help message with usage examples
 
 ## Repository Structure
 
@@ -83,6 +106,7 @@ mcp-ai-agent-example/
 ├── src/
 │   ├── index.ts              # Main CLI entry point
 │   ├── agent.ts              # AIAgent class (Vercel AI SDK + MCP)
+│   ├── helpers.ts            # CLI argument parsing & model selection
 │   ├── prompt-loader.ts      # Prompt management system
 │   └── test-connection.ts    # MCP connection test utility
 ├── tests/
@@ -96,6 +120,7 @@ mcp-ai-agent-example/
 **Key Files:**
 - **`prompts.yaml`**: Agent behavior, query budgets, reasoning approach
 - **`src/agent.ts`**: Vercel AI SDK + MCP integration
+- **`src/helpers.ts`**: CLI argument parsing and AI provider configuration
 - **`tests/test-runner.ts`**: Agent quality evaluation framework
 
 ## About the Fundable MCP
@@ -178,14 +203,14 @@ Agent: Goodbye!
 # Connection test
 npm run test:connection
 
-# Evaluation tests (measure agent quality)
-npm run test:eval              # All suites (easy + medium + hard)
-npm run test:eval:simple       # Easy suite only
-npm run test:eval:medium       # Medium suite only
-npm run test:eval:hard         # Hard suite only
-
 # Run specific test
-npx tsx tests/test-runner.ts --suite=easy --id=5
+npx run test:eval --suite=easy --id=5
+
+# Run with specific AI provider
+npx test:eval --suite=medium --provider=openai
+
+# Combine options
+npx tsx tests/test-runner.ts --suite=hard --id=5 --provider=google
 ```
 
 ### Test Framework

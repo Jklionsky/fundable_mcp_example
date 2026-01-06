@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "total_tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "pass_rate": 100,
+    "timestamp": "2026-01-06T07:09:20.808Z"
+  },
+  "tests": [
+    {
+      "test_id": 2,
+      "question": "what is openais valuation since start of 2025: for each fundraise what was their valuation",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical and efficient path to answer the question. It correctly identified the organization ID for OpenAI, queried for deals and valuations since 2025, and provided a comprehensive list of fundraises and their associated valuations. The agent used 4 tool calls, which is exactly within the expected limit. The answer provided matches the expected data points (March, August, and October deals) and provides additional context for December 2025 that was found in the database. The approach was sound, and the final answer is correct and well-structured.",
+      "tools_called_num": 4,
+      "tools_called_expected": 4,
+      "answer": "OpenAI has had several significant fundraises and valuation updates since the beginning of 2025:\n\n*   **March 31, 2025**: OpenAI raised **$40 billion** in an Equity round, reaching a valuation of **$300 billion**.\n*   **August 1, 2025**: The company raised another **$8.3 billion** in an Equity round, maintaining its **$300 billion** valuation.\n*   **October 2, 2025**: A **$6.6 billion** Secondary Market transaction took place, at which point the company's valuation was recorded at **$500 billion**.\n*   **December 31, 2025**: A valuation of **$260 billion** was recorded. This valuation is closely associated with two additional funding events: a **$1 billion** Equity raise on December 11, 2025, and a **$40 billion** Equity raise on January 4, 2026.",
+      "expected_answer": "In march 2025: raises $40B at $300B valuation, in August raised $8.3B at $300B, in Oct had secondary selling $6.6B at $500B. Most recent $1B raise in Dec 2025 didnt' have valuation attached. ",
+      "sql_queries": [
+        "SELECT id, name FROM organizations WHERE domain = 'openai.com' AND is_investor = FALSE LIMIT 1",
+        "SELECT \n    d.id AS deal_id,\n    d.date AS deal_date,\n    d.size_usd AS deal_size_millions,\n    d.financing_type,\n    v.valuation_usd AS valuation_millions,\n    v.valuation_type,\n    v.date AS valuation_date\nFROM deals d\nLEFT JOIN valuations v ON d.organization_id = v.organization_id \n    AND ABS(TIMESTAMP_DIFF(d.date, v.date, DAY)) <= 30\nWHERE d.organization_id = '97ae048e-77bc-471b-821a-f9decb373689'\nAND d.date >= TIMESTAMP('2025-01-01')\nORDER BY d.date DESC",
+        "SELECT \n    FORMAT_TIMESTAMP('%Y-%m-%d', d.date) AS deal_date,\n    d.size_usd AS deal_size_millions,\n    d.financing_type,\n    v.valuation_usd AS valuation_millions,\n    v.valuation_type\nFROM deals d\nLEFT JOIN valuations v ON d.organization_id = v.organization_id \n    AND ABS(TIMESTAMP_DIFF(d.date, v.date, DAY)) <= 2\nWHERE d.organization_id = '97ae048e-77bc-471b-821a-f9decb373689'\nAND d.date >= TIMESTAMP('2025-01-01')\nORDER BY d.date ASC",
+        "SELECT \n    FORMAT_TIMESTAMP('%Y-%m-%d', date) AS val_date,\n    valuation_usd AS valuation_millions,\n    valuation_type\nFROM valuations\nWHERE organization_id = '97ae048e-77bc-471b-821a-f9decb373689'\nAND date >= TIMESTAMP('2025-01-01')\nORDER BY date ASC"
+      ],
+      "expected_path": "Discover OpenAI in organizations (domain = 'openai.com'), join to valuations to get valuation history"
+    }
+  ]
+}

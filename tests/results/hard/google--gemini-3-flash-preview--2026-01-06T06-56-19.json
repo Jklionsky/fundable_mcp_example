@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "total_tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "pass_rate": 100,
+    "timestamp": "2026-01-06T06:56:19.905Z"
+  },
+  "tests": [
+    {
+      "test_id": 8,
+      "question": "Find company with most secondary market transactions and show which investors bought secondary shares",
+      "grade": "pass",
+      "reasoning": "The agent successfully identified OpenAI as the company with the most secondary market transactions (3 deals) and correctly listed the investors involved in those transactions. The logical approach was sound: first identifying the top company, then querying for the specific details of that company's secondary deals. While the agent took 3 tool calls (one more than the 'expected' target of 2), this is well within the acceptable efficiency range (+2 calls over expected is the threshold for a major inefficiency). The final answer was detailed, accurate, and aligned perfectly with the expected results.",
+      "tools_called_num": 3,
+      "tools_called_expected": 2,
+      "answer": "The company with the most secondary market transactions in the dataset is **OpenAI**, with a total of **3 secondary deals**.\n\nThe investors who have purchased secondary shares in OpenAI across these transactions include:\n\n*   **Recent Large Transaction:**\n    *   MGX\n    *   T. Rowe Price Associates\n    *   Thrive Capital\n    *   Dragoneer Investment Group\n    *   SoftBank\n*   **Secondary Round (February 2024):**\n    *   Thrive Capital (Lead)\n*   **Secondary Round (April 2023 - $300M):**\n    *   Founders Fund\n    *   Thrive Capital\n    *   Andreessen Horowitz\n    *   Sequoia Capital\n    *   K2 Global\n\nOther companies with notable secondary market activity include **Kabam** (2 transactions), while companies like **Cohesity**, **TransferGo**, and **USDh** each have 1 recorded secondary transaction.",
+      "expected_answer": "OpenAI (openai.com) has 3 secondary deals -  Top investors who bought secondary shares (deal counts): Thrive Capital (3), Founders Fund (1), K2 Global (1), Andreessen Horowitz (1), Dragoneer Investment Group (1), MGX (1), T. Rowe Price Associates (1), Sequoia Capital (1), SoftBank (1)",
+      "sql_queries": [
+        "SELECT\n    o.id,\n    o.name,\n    o.domain,\n    COUNT(d.id) AS secondary_deal_count\nFROM\n    deals d\nJOIN\n    organizations o ON d.organization_id = o.id\nWHERE\n    d.financing_type = 'SECONDARY_MARKET'\n    AND o.is_investor = FALSE\nGROUP BY\n    1, 2, 3\nORDER BY\n    secondary_deal_count DESC\nLIMIT 1;",
+        "SELECT\n    d.id AS deal_id,\n    d.date,\n    d.size_usd,\n    i_org.name AS investor_name,\n    ii.lead_investor\nFROM\n    deals d\nJOIN\n    institutional_investments ii ON d.id = ii.deal_id\nJOIN\n    organizations i_org ON ii.organization_id = i_org.id\nWHERE\n    d.organization_id = '97ae048e-77bc-471b-821a-f9decb373689'\n    AND d.financing_type = 'SECONDARY_MARKET'\nORDER BY\n    d.date DESC;",
+        "SELECT\n    o.name,\n    COUNT(d.id) AS secondary_deal_count\nFROM\n    deals d\nJOIN\n    organizations o ON d.organization_id = o.id\nWHERE\n    d.financing_type = 'SECONDARY_MARKET'\n    AND o.is_investor = FALSE\nGROUP BY\n    1\nORDER BY\n    secondary_deal_count DESC\nLIMIT 5;"
+      ],
+      "expected_path": "Filter deals WHERE financing_type = 'SECONDARY_MARKET', COUNT(DISTINCT deals.id) grouped by organization_id. REMINDER: SECONDARY_MARKET represents existing shares traded (not new capital raised) but IS included in deal counts. Join to organizations to get company names. For top companies, join deals → institutional_investments → organizations (investor) to get investor names. CRITICAL: Multiple investors per deal creates 1:N - use STRING_AGG or ARRAY_AGG to concatenate investor names without cartesian products. ORDER BY secondary_transaction_count DESC. Return company name, number of secondary transactions, aggregated list of investors, transaction dates."
+    }
+  ]
+}

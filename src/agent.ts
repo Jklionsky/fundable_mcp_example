@@ -6,7 +6,7 @@ import { getPrompt } from "./prompt-loader.js";
 /**
  * AI Agent wrapper that integrates Vercel's Agent class with MCP tools
  *
- * Supports OpenAI, Anthropic, Google (Gemini), and other AI SDK providers
+ * Supports OpenAI, Google (Gemini), and other AI SDK providers
  */
 export class AIAgent {
   private mcpClient: MCPClient | null = null;
