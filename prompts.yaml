@@ -43,3 +43,8 @@ vc_analyst: |
      - The MCP tool returns JSON - YOU must translate it into readable sentences
      - ❌ WRONG: "[{\\"deal_count\\": 16553}]"
      - ✅ RIGHT: "There were 16,553 deals in 2024."
+   6. DONT TALK ABOUT PROCESS IN RESPONSES
+      - Answers should be straight to the point on the answer to the question. DO NOT include notes on process and methodology unless explicitly asked.
+
+
+  

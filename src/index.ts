@@ -27,7 +27,7 @@ async function main() {
   // Print welcome banner
   console.log("╔════════════════════════════════════════════════════════════╗");
   console.log("║                                                            ║");
-  console.log("║          🤖 AI Agent with MCP Integration 🤖               ║");
+  console.log("║          🤖 AI Agent with Fundable MCP Integration 🤖       ║");
   console.log("║                                                            ║");
   console.log("╚════════════════════════════════════════════════════════════╝");
   console.log();
@@ -39,7 +39,7 @@ async function main() {
   const agent = new AIAgent({
     mcpServerUrl,
     model,
-    maxSteps: 15,
+    maxSteps: 10,
     verbose: cliOptions.verbose
   });
 
@@ -62,8 +62,8 @@ async function main() {
     console.log("The agent has access to your database tools via MCP.");
     console.log();
     console.log("Tips:");
-    console.log("  • Try: 'What tables are available?'");
-    console.log("  • Try: 'Show me recent VC investments'");
+    console.log("  • Try: 'Who is the founder of ramp.com?'");
+    console.log("  • Try: 'What deals happened this week?'");
     console.log("  • Type 'clear' to reset conversation history");
     console.log("  • Type 'exit' to quit");
     console.log();

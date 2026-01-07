@@ -61,43 +61,7 @@ OPENAI_MODEL=gpt-5-mini  # Optional
 # Reccomend using openai model for highest accuracy + tool call efficiency. Gemini flash models tend to offer best combination of speed + accuracy.
 ```
 
-### Running the Agent
-
-```bash
-# Test MCP server connection
-npm run test:connection
-
-# Run interactive CLI (auto-detects provider)
-npm run dev
-
-# Run with specific provider
-npm start -- --provider openai
-npm start -- --provider anthropic
-npm start -- --provider google
-
-# Run with verbose logging
-npm start -- --verbose
-npm start -- -v
-
-# Combine options
-npm start -- --provider openai --verbose
-
-# Show all available options
-npm start -- --help
-
-# Build for production
-npm run build && npm start
-```
-
-### CLI Options
-
-The agent supports the following command-line options:
-
-- **`-p, --provider <name>`** - Specify AI provider: `openai`, `anthropic`, or `google`
-  - Default: Auto-detect based on available API keys (priority: Google → OpenAI → Anthropic)
-- **`-v, --verbose`** - Enable verbose logging to see tool calls and reasoning
-  - Default: `false`
-- **`-h, --help`** - Show help message with usage examples
+## Core Agent components
 
 ## Repository Structure
 
@@ -125,7 +89,7 @@ mcp-ai-agent-example/
 
 ## About the Fundable MCP
 
-The Fundable MCP server exposes **4 tools** for querying venture capital data from BigQuery:
+The Fundable MCP server exposes **5 tools** for querying venture capital data from BigQuery:
 
 ### 1. getDatasetContext
 **Purpose:** Get complete dataset documentation before querying
@@ -142,7 +106,15 @@ Without this context, you'll likely use wrong table names, forget value formats,
 ### 2. listDatasetTables
 **Purpose:** Quick overview of available tables
 
-### 3. getTableDetails
+### 3. getQueryExamples
+**Purpose:** Pull BigQuery example queries by query category (e.g., Funding Analysis, People & Relationships)
+
+**Parameters:**
+- `category` (string): Category of example query to pull
+
+**When to use it:** On a question by question basis if you are unsure how to structure a specific query / have failed with previous queries
+
+### 4. getTableDetails
 **Purpose:** Get schema details for a specific table
 
 **Parameters:**
@@ -150,7 +122,7 @@ Without this context, you'll likely use wrong table names, forget value formats,
 
 **Returns:** Column names, types, and constraints for that table
 
-### 4. queryVCData ⭐
+### 5. queryVCData ⭐
 **Purpose:** Execute read-only BigQuery SQL queries (the core query tool)
 
 **Parameters:**
@@ -164,9 +136,53 @@ Without this context, you'll likely use wrong table names, forget value formats,
 
 **Security:** All write operations (INSERT, UPDATE, DELETE, DROP) are blocked. SQL injection protection included.
 
-## Usage Examples
+## Running the Agent
 
-### Interactive CLI
+### CLI Options
+
+The agent supports the following command-line options:
+
+- **`--provider=<name>`** - Specify AI provider: `openai`, `anthropic`, or `google`
+  - Default: Auto-detect based on available API keys (priority: Google → OpenAI → Anthropic)
+  - Specific model utilized are defined in env variables
+- **`-v, --verbose`** - Enable verbose logging to see tool calls and reasoning
+  - Default: `false`
+- **`-h, --help`** - Show help message with usage examples
+
+### Example CLI commands
+
+```bash
+# Test MCP server connection
+npm run test:connection
+
+# Run interactive CLI (auto-detects provider)
+npm run dev
+
+# Run with specific provider
+npm run dev -- --provider=openai
+npm run dev -- --provider=anthropic
+npm run dev -- --provider=google
+
+# Run with verbose logging of tool calls and results
+npm run dev -- -v
+
+# Combine options
+npm run dev -- --provider=openai -v
+
+# Show all available options
+npm run dev -- --help
+
+# Build for production
+npm run build
+```
+
+### Available Text Commands
+
+- **Natural questions** - Ask about companies, investors, funding rounds, etc.
+- **`clear`** - Reset conversation history
+- **`exit`** or **`quit`** - Exit the CLI
+
+## Usage Examples
 
 ```bash
 npm run dev
@@ -189,12 +205,6 @@ You: Exit
 Agent: Goodbye!
 ```
 
-### Available Commands
-
-- **Natural questions** - Ask about companies, investors, funding rounds, etc.
-- **`clear`** - Reset conversation history
-- **`exit`** or **`quit`** - Exit the CLI
-
 ## Testing & Evaluation
 
 ### Running Tests
@@ -203,14 +213,20 @@ Agent: Goodbye!
 # Connection test
 npm run test:connection
 
+# Run all test suites
+npm run test:eval
+
+# Run specific suite
+npm run test:eval -- --suite=easy
+
 # Run specific test
-npx run test:eval --suite=easy --id=5
+npm run test:eval -- --suite=easy --id=5
 
 # Run with specific AI provider
-npx test:eval --suite=medium --provider=openai
+npm run test:eval -- --suite=medium --provider=openai
 
 # Combine options
-npx tsx tests/test-runner.ts --suite=hard --id=5 --provider=google
+npm run test:eval -- --suite=hard --provider=google
 ```
 
 ### Test Framework

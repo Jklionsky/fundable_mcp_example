@@ -2,12 +2,14 @@ import { Experimental_Agent as Agent, LanguageModel, stepCountIs, CoreMessage } 
 import { experimental_createMCPClient as createMCPClient, type experimental_MCPClient as MCPClient } from "@ai-sdk/mcp";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { getPrompt } from "./prompt-loader.js";
+import { detectProvider, getProviderCacheOptions, AIProvider, TOKEN_OPTIMIZATION } from "./helpers.js";
 
 /**
  * AI Agent wrapper that integrates Vercel's Agent class with MCP tools
  *
  * Supports OpenAI, Google (Gemini), and other AI SDK providers
  */
+
 export class AIAgent {
   private mcpClient: MCPClient | null = null;
   private agent: Agent<any> | null = null;
@@ -16,6 +18,7 @@ export class AIAgent {
   private messages: CoreMessage[] = []; // Store conversation history
   private trace: Array<Array<{toolName: string, input: any, output: any, stepNumber: number}>> = []; // Store tool call traces
   private verbose: boolean;
+  private provider: AIProvider; // Track provider for caching optimizations
 
   constructor(config: {
     mcpServerUrl: string;
@@ -26,7 +29,8 @@ export class AIAgent {
   }) {
     this.mcpServerUrl = config.mcpServerUrl;
     this.model = config.model;
-    this.verbose = config.verbose ?? true; // Default to true for backward compatibility
+    this.verbose = config.verbose ?? false; // Default to true for backward compatibility
+    this.provider = detectProvider(config.model);
   }
 
   /**
@@ -38,10 +42,10 @@ export class AIAgent {
   }): Promise<void> {
     console.log("🤖 Initializing AI Agent...\n");
     console.log(`📡 Connecting to MCP server at ${this.mcpServerUrl}...`);
-    console.log("Note: A browser window will open for GitHub authentication if needed.\n");
 
     // Create MCP client using stdio transport with mcp-remote
     // This allows us to connect to remote MCP servers with OAuth authentication
+    // Add  stderr: 'ignore' to remove MCP logging
     this.mcpClient = await createMCPClient({
       transport: new StdioClientTransport({
         command: "npx",
@@ -81,12 +85,16 @@ export class AIAgent {
         content: userMessage,
       });
 
+      // Apply provider-specific caching options (e.g., Anthropic prompt caching, not available for others)
+      const cacheOptions = getProviderCacheOptions(this.provider);
+      
       // Generate response with full conversation history
       const result = await this.agent.generate({
         messages: this.messages,
+        ...cacheOptions,
       });
 
-      // Capture trace data for this conversation turn
+      // Capture trace data for this conversation turn -- for debugging of agent tool calls
       const currentTrace: Array<{toolName: string, input: any, output: any, stepNumber: number}> = [];
       if (result.steps && result.steps.length > 0) {
         const toolCalls = result.steps.filter((step: any) => step.toolCalls && step.toolCalls.length > 0);
@@ -105,7 +113,6 @@ export class AIAgent {
         });
       }
       this.trace.push(currentTrace);
-
       // Log tool usage information if verbose mode is enabled
       if (this.verbose) {
         this.logToolUsage(result);
@@ -118,12 +125,16 @@ export class AIAgent {
       // - Final assistant response
       this.messages.push(...result.response.messages);
 
+      // Truncate large tool results to reduce token usage in subsequent requests
+      this.truncateHistory();
+
       return result.text;
     } catch (error) {
       console.error("\n❌ Error generating response:", error);
       throw error;
     }
   }
+  
 
   /**
    * Log tool usage information to console
@@ -196,6 +207,60 @@ export class AIAgent {
       }
       console.log(`\n${"=".repeat(60)}\n`);
     }
+  }
+
+  /**
+   * Truncate large tool results in message history to reduce token usage
+   * Only truncates results from query tools (queryVCData), not context/schema tools
+   * Note: We intentionally do NOT limit message count - that breaks tool call/response pairs
+   */
+  private truncateHistory(): void {
+    const { MAX_TOOL_RESULT_LENGTH, TRUNCATION_SUFFIX, TOOLS_TO_TRUNCATE } = TOKEN_OPTIMIZATION;
+
+    // Helper to truncate a string if too long
+    const truncateString = (str: string): string => {
+      if (str.length > MAX_TOOL_RESULT_LENGTH) {
+        return str.slice(0, MAX_TOOL_RESULT_LENGTH) + TRUNCATION_SUFFIX;
+      }
+      return str;
+    };
+
+    // Recursively truncate string values in any object/array structure
+    const truncateDeep = (obj: any): any => {
+      if (typeof obj === 'string') {
+        return truncateString(obj);
+      }
+      if (Array.isArray(obj)) {
+        return obj.map(truncateDeep);
+      }
+      if (obj && typeof obj === 'object') {
+        const result: any = {};
+        for (const key of Object.keys(obj)) {
+          result[key] = truncateDeep(obj[key]);
+        }
+        return result;
+      }
+      return obj;
+    };
+
+    // Truncate only query tool results, preserve context/schema tools
+    this.messages = this.messages.map(msg => {
+      // Only process tool messages
+      if (msg.role === 'tool' && Array.isArray(msg.content)) {
+        const truncatedContent = msg.content.map((part: any) => {
+          // Check if this tool result should be truncated
+          const toolName = part.toolName || '';
+          if (TOOLS_TO_TRUNCATE.has(toolName)) {
+            // Truncate the result content
+            return { ...part, result: truncateDeep(part.result) };
+          }
+          // Preserve context/schema tool results untouched
+          return part;
+        });
+        return { ...msg, content: truncatedContent };
+      }
+      return msg;
+    }) as CoreMessage[];
   }
 
   /**

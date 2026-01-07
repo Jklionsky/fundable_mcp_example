@@ -6,14 +6,10 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
+    "start": "npm run dev",
     "test:connection": "tsx src/test-connection.ts",
-    "test:agent": "tsx src/test-agent.ts",
     "test:eval": "tsx tests/test-runner.ts",
-    "test:eval:simple": "tsx tests/test-runner.ts --suite=simple",
-    "test:eval:medium": "tsx tests/test-runner.ts --suite=medium",
-    "test:eval:hard": "tsx tests/test-runner.ts --suite=hard",
     "type-check": "tsc --noEmit"
   },
   "keywords": [

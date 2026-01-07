@@ -64,7 +64,7 @@
   },
   {
     "id": 10,
-    "question": "how many sustainability startups has founders fund invested in before Dec 2025",
+    "question": "how many sustainability startups has founders fund invested in before Dec 1 2025",
     "max_tool_calls": 3,
     "expected_path_description": "First discover sustainability-related industry permalinks by searching industry_classifications with SEARCH('sustainability'), find companies within that industry permalink via organization_industries, join to deals, join to institutional_investments for Founders Fund, COUNT distinct companies.",
     "expected_answer": "Founders Fund has invested in 9+ sustainability startup"

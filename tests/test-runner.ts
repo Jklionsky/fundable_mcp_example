@@ -90,6 +90,7 @@ export interface TestConfig {
   agentModel: LanguageModel;      // Model for the agent being tested
   evaluatorModel: LanguageModel;  // Model for LLM-based evaluation
   systemPrompt: string;
+  verbose: boolean;               // Enable verbose logging
 }
 
 /**
@@ -190,11 +191,11 @@ export async function runAllTests(
   const results: UnifiedTestResult[] = [];
 
   // Create a single agent for all tests to maintain conversation context
-  // Use verbose: false to suppress console output during tests
+  // Verbose flag is controlled by CLI argument (default: false)
   const agent = new AIAgent({
     mcpServerUrl: config.mcpServerUrl,
     model: config.agentModel,
-    verbose: true,
+    verbose: config.verbose,
   });
 
   try {
@@ -276,6 +277,7 @@ async function main() {
   const suite = args.find(arg => arg.startsWith('--suite='))?.split('=')[1] || 'all';
   const testId = args.find(arg => arg.startsWith('--id='))?.split('=')[1];
   const provider = args.find(arg => arg.startsWith('--provider='))?.split('=')[1] || null;
+  const verbose = args.includes('-v') || args.includes('--verbose');
 
   // Validate environment
   const mcpServerUrl = process.env.MCP_SERVER_URL;
@@ -348,6 +350,7 @@ async function main() {
       agentModel,
       evaluatorModel,
       systemPrompt,
+      verbose,
     });
 
     // Accumulate results
