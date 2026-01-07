@@ -6,6 +6,38 @@ This project demonstrates how to build a command-line AI agent using Vercel's AI
 
 **Key Purpose:** This is intentionally a straightforward example showing what you can accomplish with MCP without complex prompting or extensive code modifications. The simplicity demonstrates MCP's power - **downstream users should add more advanced prompting techniques for production use** (see Production Considerations below).
 
+## Table of Contents
+
+- [Production Considerations](#️-production-considerations)
+- [Quick Start](#quick-start)
+- [Prerequisites & Setup](#prerequisites--setup)
+- [Running the Agent](#running-the-agent)
+- [Usage Examples](#usage-examples)
+- [Repository Structure](#repository-structure)
+- [About the Fundable MCP](#about-the-fundable-mcp)
+- [Testing & Evaluation](#testing--evaluation)
+- [License](#license)
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your API key
+
+# 3. Get allowlisted (required)
+# Contact jacob@tryfundable.ai with your GitHub username
+
+# 4. Test connection
+npm run test:connection
+
+# 5. Start the agent
+npm run dev
+```
+
 ## ⚠️ Production Considerations
 
 This example uses relatively simple prompting to demonstrate MCP's core capabilities. **For production use, you should implement more advanced prompting techniques:**
@@ -58,83 +90,8 @@ OPENAI_MODEL=gpt-5-mini  # Optional
 # ANTHROPIC_API_KEY=sk-your-api-key-here
 # ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
 
-# Reccomend using openai model for highest accuracy + tool call efficiency. Gemini flash models tend to offer best combination of speed + accuracy.
+# Recommend using openai model for highest accuracy + tool call efficiency. Gemini flash models tend to offer best combination of speed + accuracy.
 ```
-
-## Core Agent components
-
-## Repository Structure
-
-```
-mcp-ai-agent-example/
-├── src/
-│   ├── index.ts              # Main CLI entry point
-│   ├── agent.ts              # AIAgent class (Vercel AI SDK + MCP)
-│   ├── helpers.ts            # CLI argument parsing & model selection
-│   ├── prompt-loader.ts      # Prompt management system
-│   └── test-connection.ts    # MCP connection test utility
-├── tests/
-│   ├── test-runner.ts        # Test orchestration engine
-│   ├── test-suite/           # Test cases by difficulty
-│   └── helpers/              # LLM-based evaluation system
-├── prompts.yaml              # ⭐ Agent system prompts
-└── .env.example              # Environment template
-```
-
-**Key Files:**
-- **`prompts.yaml`**: Agent behavior, query budgets, reasoning approach
-- **`src/agent.ts`**: Vercel AI SDK + MCP integration
-- **`src/helpers.ts`**: CLI argument parsing and AI provider configuration
-- **`tests/test-runner.ts`**: Agent quality evaluation framework
-
-## About the Fundable MCP
-
-The Fundable MCP server exposes **5 tools** for querying venture capital data from BigQuery:
-
-### 1. getDatasetContext
-**Purpose:** Get complete dataset documentation before querying
-
-**Why use it:** Should **always be called at the beginning** of a session. Provides:
-- Full table schemas with column types (DBML format)
-- Business rules (e.g., all monetary values are in MILLIONS)
-- Optimal join patterns and relationships
-- 20+ copy-paste example queries
-- Common pitfalls and validation tips
-
-Without this context, you'll likely use wrong table names, forget value formats, or miss critical join patterns.
-
-### 2. listDatasetTables
-**Purpose:** Quick overview of available tables
-
-### 3. getQueryExamples
-**Purpose:** Pull BigQuery example queries by query category (e.g., Funding Analysis, People & Relationships)
-
-**Parameters:**
-- `category` (string): Category of example query to pull
-
-**When to use it:** On a question by question basis if you are unsure how to structure a specific query / have failed with previous queries
-
-### 4. getTableDetails
-**Purpose:** Get schema details for a specific table
-
-**Parameters:**
-- `tableName` (string): Table to inspect
-
-**Returns:** Column names, types, and constraints for that table
-
-### 5. queryVCData ⭐
-**Purpose:** Execute read-only BigQuery SQL queries (the core query tool)
-
-**Parameters:**
-- `sql` (string): SQL query to execute
-- `maxResults` (number, optional, max 10,000): Result limit
-
-**How it works:**
-1. Validates query (blocks writes, checks table/column names, detects dangerous patterns)
-2. Executes query via BigQuery REST API with service account credentials
-3. Returns results as JSON with execution statistics (bytes processed, execution time)
-
-**Security:** All write operations (INSERT, UPDATE, DELETE, DROP) are blocked. SQL injection protection included.
 
 ## Running the Agent
 
@@ -144,7 +101,7 @@ The agent supports the following command-line options:
 
 - **`--provider=<name>`** - Specify AI provider: `openai`, `anthropic`, or `google`
   - Default: Auto-detect based on available API keys (priority: Google → OpenAI → Anthropic)
-  - Specific model utilized are defined in env variables
+  - Specific models utilized are defined in env variables
 - **`-v, --verbose`** - Enable verbose logging to see tool calls and reasoning
   - Default: `false`
 - **`-h, --help`** - Show help message with usage examples
@@ -204,6 +161,42 @@ Agent: Conversation history cleared.
 You: Exit
 Agent: Goodbye!
 ```
+
+## Repository Structure
+
+```
+mcp-ai-agent-example/
+├── src/
+│   ├── index.ts              # Main CLI entry point
+│   ├── agent.ts              # AIAgent class (Vercel AI SDK + MCP)
+│   ├── helpers.ts            # CLI argument parsing & model selection
+│   ├── prompt-loader.ts      # Prompt management system
+│   └── test-connection.ts    # MCP connection test utility
+├── tests/
+│   ├── test-runner.ts        # Test orchestration engine
+│   ├── test-suite/           # Test cases by difficulty
+│   └── helpers/              # LLM-based evaluation system
+├── prompts.yaml              # ⭐ Agent system prompts
+└── .env.example              # Environment template
+```
+
+**Key Files:**
+- **`prompts.yaml`**: Agent behavior, query budgets, reasoning approach
+- **`src/agent.ts`**: Vercel AI SDK + MCP integration
+- **`src/helpers.ts`**: CLI argument parsing and AI provider configuration
+- **`tests/test-runner.ts`**: Agent quality evaluation framework
+
+## About the Fundable MCP
+
+The Fundable MCP server exposes **5 tools** for querying venture capital data from BigQuery:
+
+| Tool | Purpose | Parameters | Key Details |
+|------|---------|------------|-------------|
+| **getDatasetContext** | Get complete dataset documentation before querying | None | **Always call at session start.** Provides: table schemas (DBML), business rules (monetary values in MILLIONS), join patterns, 20+ example queries, validation tips. Without this, you'll likely use wrong table names or miss critical patterns. |
+| **listDatasetTables** | Quick overview of available tables | None | Returns list of all available tables in the dataset. |
+| **getQueryExamples** | Pull BigQuery example queries by category | `category` (string): Query category (e.g., "Funding Analysis", "People & Relationships") | Use when unsure how to structure a query or after failed attempts. |
+| **getTableDetails** | Get schema details for a specific table | `tableName` (string): Table to inspect | Returns column names, types, and constraints for the specified table. |
+| **queryVCData** ⭐ | Execute read-only BigQuery SQL queries (core tool) | `sql` (string): SQL query<br>`maxResults` (number, optional, max 10,000): Result limit | **How it works:** (1) Validates query - blocks writes, checks tables/columns, detects dangerous patterns (2) Executes via BigQuery REST API (3) Returns JSON results with stats (bytes processed, execution time). **Security:** All write operations blocked with SQL injection protection. |
 
 ## Testing & Evaluation
 
