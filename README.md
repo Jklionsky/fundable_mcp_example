@@ -190,13 +190,13 @@ mcp-ai-agent-example/
 
 The Fundable MCP server exposes **5 tools** for querying venture capital data from BigQuery:
 
-| Tool | Purpose | Parameters | Key Details |
-|------|---------|------------|-------------|
-| **getDatasetContext** | Get complete dataset documentation before querying | None | **Always call at session start.** Provides: table schemas (DBML), business rules (monetary values in MILLIONS), join patterns, 20+ example queries, validation tips. Without this, you'll likely use wrong table names or miss critical patterns. |
-| **listDatasetTables** | Quick overview of available tables | None | Returns list of all available tables in the dataset. |
-| **getQueryExamples** | Pull BigQuery example queries by category | `category` (string): Query category (e.g., "Funding Analysis", "People & Relationships") | Use when unsure how to structure a query or after failed attempts. |
-| **getTableDetails** | Get schema details for a specific table | `tableName` (string): Table to inspect | Returns column names, types, and constraints for the specified table. |
-| **queryVCData** ⭐ | Execute read-only BigQuery SQL queries (core tool) | `sql` (string): SQL query<br>`maxResults` (number, optional, max 10,000): Result limit | **How it works:** (1) Validates query - blocks writes, checks tables/columns, detects dangerous patterns (2) Executes via BigQuery REST API (3) Returns JSON results with stats (bytes processed, execution time). **Security:** All write operations blocked with SQL injection protection. |
+| Tool | Purpose | Params |
+|------|---------|--------|
+| **getDatasetContext** | **Call at session start.** Returns complete dataset documentation: table schemas (DBML), business rules (monetary values in MILLIONS), and join patterns. | None |
+| **listDatasetTables** | Quick overview of all available tables in the dataset. | None |
+| **getQueryExamples** | Access 20+ example queries by category. Useful when unsure how to structure a query or after failed attempts. | `category`: Query category (e.g., "Funding Analysis", "People & Relationships") |
+| **getTableDetails** | Get column names, types, and constraints for a specific table. | `tableName`: Table to inspect |
+| **queryVCData** ⭐ | Execute read-only BigQuery SQL. Validates queries (blocks writes, checks tables/columns), executes via BigQuery REST API, returns JSON results with stats. | `sql`: SQL query<br>`maxResults`: Result limit (optional, max 10,000) |
 
 ## Testing & Evaluation
 
