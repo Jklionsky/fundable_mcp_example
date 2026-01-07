@@ -8,8 +8,8 @@ This project demonstrates how to build a command-line AI agent using Vercel's AI
 
 ## Table of Contents
 
-- [Production Considerations](#️-production-considerations)
 - [Quick Start](#quick-start)
+- [Production Considerations](#️-production-considerations)
 - [Prerequisites & Setup](#prerequisites--setup)
 - [Running the Agent](#running-the-agent)
 - [Usage Examples](#usage-examples)
