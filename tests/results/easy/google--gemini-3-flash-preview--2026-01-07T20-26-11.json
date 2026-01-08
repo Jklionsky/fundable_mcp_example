@@ -1,0 +1,160 @@
+{
+  "metadata": {
+    "total_tests": 10,
+    "passed": 10,
+    "failed": 0,
+    "pass_rate": 100,
+    "timestamp": "2026-01-07T20:26:11.383Z",
+    "duration_ms": 135279,
+    "duration": "2m 15s",
+    "total_tool_calls": 16,
+    "total_expected_tool_calls": 25
+  },
+  "tests": [
+    {
+      "test_id": 1,
+      "question": "how many deals happened in 2024",
+      "grade": "pass",
+      "reasoning": "The agent used a correct and efficient SQL query to count unique deals within the year 2024. The approach of filtering by a timestamp range is standard and accurate. The final answer matches the expected value exactly, and the task was completed in a single tool call.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "There were 16,549 deals in 2024.",
+      "expected_answer": "There were 16,549 deals in 2024",
+      "sql_queries": [
+        "SELECT COUNT(DISTINCT d.id) AS deal_count\nFROM deals d\nWHERE d.date >= TIMESTAMP('2024-01-01')\n  AND d.date < TIMESTAMP('2025-01-01')"
+      ],
+      "expected_path": "Query unique financings with date in 2024."
+    },
+    {
+      "test_id": 2,
+      "question": "how many times has https://ramp.com/ raised and how much have they raised all time",
+      "grade": "pass",
+      "reasoning": "The agent followed the expected approach perfectly. It used the domain filter 'ramp.com' and ensured the organization was not an investor. The SQL query correctly targeted the 'num_funding_rounds' and 'total_raised' columns as requested. The final answer is factually correct and matches the expected answer exactly. The agent was efficient, using only one tool call.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "Ramp has raised funding 14 times for a total of $2,827 million ($2.83 billion) all time.",
+      "expected_answer": "Ramp has raised 14 times for a total of $2.83 billion all time",
+      "sql_queries": [
+        "SELECT \n  id, \n  name, \n  num_funding_rounds, \n  total_raised \nFROM organizations \nWHERE domain = 'ramp.com' \n  AND is_investor = FALSE"
+      ],
+      "expected_path": "Find Ramp using domain = 'ramp.com', ensure is_investor = FALSE use num_funding_rounds to count deals and total_raised for total amount"
+    },
+    {
+      "test_id": 3,
+      "question": "how much has ramp raised and how many times have they raised from 2024 to the end of 2025",
+      "grade": "pass",
+      "reasoning": "The agent followed the instructions perfectly. It used a single, well-constructed SQL query that joined the deals and organizations tables, filtered for the correct domain, applied the specific date range (2024 to the end of 2025), and correctly implemented the logic to exclude 'SECONDARY_MARKET' transactions from the sum of funds raised. The final answer matches the expected results exactly, and the process was highly efficient.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "Ramp has raised funding 6 times for a total of $1,150 million ($1.15 billion) between 2024 and the end of 2025.",
+      "expected_answer": "Ramp has raised 6 times and $1,150 million from 2024 to the end of 2025",
+      "sql_queries": [
+        "SELECT \n  COUNT(DISTINCT d.id) AS deal_count,\n  SUM(CASE WHEN d.financing_type != 'SECONDARY_MARKET' THEN d.size_usd ELSE 0 END) AS total_raised_millions\nFROM deals d\nJOIN organizations o ON d.organization_id = o.id\nWHERE o.domain = 'ramp.com' \n  AND o.is_investor = FALSE\n  AND d.date >= TIMESTAMP('2024-01-01')\n  AND d.date < TIMESTAMP('2026-01-01')"
+      ],
+      "expected_path": "Using context on ramp from previous question, calculate total deal count in timeframe for total_raised make sure to exclude SECONDARY_MARKET financing_type."
+    },
+    {
+      "test_id": 4,
+      "question": "who is ramp ceo and what is his linkedin and email",
+      "grade": "pass",
+      "reasoning": "The agent used a highly efficient and logical approach to answer the question. It joined the necessary tables (people, organization_associations, and organizations) and used precise filters (domain = 'ramp.com' and is_ceo/title checks) to identify the correct person. The answer provided is factually accurate and matches the expected answer perfectly. The agent completed the task in a single tool call, demonstrating excellent efficiency.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "The CEO of Ramp is Eric Glyman. His LinkedIn profile is [https://www.linkedin.com/in/eglyman/](https://www.linkedin.com/in/eglyman/) and his email is eric@ramp.com.",
+      "expected_answer": "Ramp's CEO is Eric Glyman and his linkedin is https://www.linkedin.com/in/eglyman and his email is eric@ramp.com",
+      "sql_queries": [
+        "SELECT \n    p.name, \n    p.linkedin_person_url, \n    p.email\nFROM people p\nJOIN organization_associations oa ON p.id = oa.person_id\nJOIN organizations o ON oa.organization_id = o.id\nWHERE o.domain = 'ramp.com' \n  AND o.is_investor = FALSE \n  AND (oa.is_ceo = TRUE OR LOWER(oa.title) LIKE '%ceo%')\nLIMIT 10"
+      ],
+      "expected_path": "Join ramp organization to organization_associations WHERE is_ceo = TRUE, join to people, return name, linkedin_person_url, and email."
+    },
+    {
+      "test_id": 5,
+      "question": "who was the lead investor in ramp june 2025 round",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical and efficient approach to answer the question. It correctly identified the necessary tables (deals, organizations, institutional_investments), applied the appropriate filters for the company (ramp.com), the date range (June 2025), and the lead investor status. The SQL query was well-structured and produced the correct answer in a single tool call, meeting all criteria for correctness and efficiency.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "The lead investor in Ramp's June 2025 Series E round was Founders Fund.",
+      "expected_answer": "Founders Fund was the lead investor in Ramp's June 2025 round",
+      "sql_queries": [
+        "SELECT \n    d.id AS deal_id,\n    d.date,\n    d.financing_type,\n    o_inv.name AS lead_investor_name\nFROM deals d\nJOIN organizations o_ramp ON d.organization_id = o_ramp.id\nJOIN institutional_investments ii ON d.id = ii.deal_id\nJOIN organizations o_inv ON ii.organization_id = o_inv.id\nWHERE o_ramp.domain = 'ramp.com' \n  AND o_ramp.is_investor = FALSE\n  AND d.date >= TIMESTAMP('2025-06-01')\n  AND d.date < TIMESTAMP('2025-07-01')\n  AND ii.lead_investor = TRUE"
+      ],
+      "expected_path": "Join ramp organization to deals WHERE date in June 2025 (EXTRACT(MONTH) = 6 AND EXTRACT(YEAR) = 2025), join to institutional_investments WHERE lead_investor = TRUE, return investor organization name."
+    },
+    {
+      "test_id": 6,
+      "question": "which investor has taken part in the most ramp rounds - return the top 5",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical and efficient approach to answer the question. It correctly identified the company 'Ramp' using its domain, joined the necessary tables (deals, institutional_investments, and organizations) to link the company to its investors, and aggregated the data accurately. The resulting list and counts match the expected output exactly, with only a minor tie-break difference in the sorting of the 4th and 5th results, which is perfectly acceptable. The task was completed in a single tool call, demonstrating high efficiency.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "The top 5 investors who have participated in the most Ramp funding rounds are:\n\n1. **Founders Fund**: 9 rounds\n2. **Thrive Capital**: 9 rounds\n3. **Coatue**: 8 rounds\n4. **Definition Capital**: 7 rounds\n5. **Lux Capital**: 7 rounds",
+      "expected_answer": "Here are the top 5 investors who have participated in the most Ramp rounds:\n\n1. **Founders Fund** - 9 deals\n2. **Thrive Capital** - 9 deals\n3. **Coatue** - 8 deals\n4. **Lux Capital** - 7 deals\n5. **Definition Capital** - 7 deals",
+      "sql_queries": [
+        "SELECT \n    o_inv.name AS investor_name,\n    COUNT(DISTINCT d.id) AS round_count\nFROM deals d\nJOIN organizations o_ramp ON d.organization_id = o_ramp.id\nJOIN institutional_investments ii ON d.id = ii.deal_id\nJOIN organizations o_inv ON ii.organization_id = o_inv.id\nWHERE o_ramp.domain = 'ramp.com' \n  AND o_ramp.is_investor = FALSE\nGROUP BY 1\nORDER BY 2 DESC\nLIMIT 5"
+      ],
+      "expected_path": "Join ramp organization to deals, join to institutional_investments, join to investor organizations, GROUP BY investor, COUNT deals per investor, ORDER BY count DESC, LIMIT 5."
+    },
+    {
+      "test_id": 7,
+      "question": "who is the managing partner at founders fund",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical and efficient approach to answer the question. It correctly identified the necessary tables (people, organization_associations, and organizations) and applied appropriate filters for the organization name and the specific job title requested ('managing partner'). The SQL query was well-structured, and the resulting answer matches the expected factual information. The agent completed the task in a single tool call, demonstrating high efficiency.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "The Managing Partner at Founders Fund is Peter Thiel.",
+      "expected_answer": "Peter Thiel is the managing partner at Founders Fund",
+      "sql_queries": [
+        "SELECT \n    p.name, \n    oa.title, \n    p.linkedin_person_url\nFROM people p\nJOIN organization_associations oa ON p.id = oa.person_id\nJOIN organizations o ON oa.organization_id = o.id\nWHERE (o.domain = 'foundersfund.com' OR o.name = 'Founders Fund')\n  AND o.is_investor = TRUE\n  AND (LOWER(oa.title) LIKE '%managing partner%')\nLIMIT 10"
+      ],
+      "expected_path": "Given existing context on founders fund from previous question, join with organization_associations WHERE LOWER(title) LIKE '%managing partner%', join to people, return person details."
+    },
+    {
+      "test_id": 8,
+      "question": "tell me about founders fund 2020 investment in Trade Republic. did they lead the round. can you provide an article?",
+      "grade": "pass",
+      "reasoning": "The agent followed the expected logical path perfectly. It first identified the correct organization IDs for Trade Republic and Founders Fund. It then constructed a precise SQL query to find the specific deal in 2020, determine the lead investor status, and retrieve the primary article link. The answer provided is factually accurate, directly addresses all parts of the user's prompt (confirming lead status and providing an article), and matches the expected result. The process was highly efficient, using only two tool calls.",
+      "tools_called_num": 2,
+      "tools_called_expected": 4,
+      "answer": "In April 2020, Founders Fund led Trade Republic's **Series B** funding round, which raised **$67.3 million** (€62 million).\n\nYou can find more details in this article: [Trade Republic Raises €62M in Series B Funding](https://www.finsmes.com/2020/04/trade-republic-raises-e62m-in-series-b-funding.html).",
+      "expected_answer": "Founders Fund was a lead investor in the Apr 2020 Series B where they raised $67.3M. Here is an article: https://www.finsmes.com/2020/04/trade-republic-raises-e62m-in-series-b-funding.html",
+      "sql_queries": [
+        "SELECT id, name, domain, is_investor\nFROM organizations\nWHERE (domain = 'traderepublic.com' AND is_investor = FALSE)\n   OR (domain = 'foundersfund.com' AND is_investor = TRUE)",
+        "SELECT \n    d.id AS deal_id,\n    d.date,\n    d.financing_type,\n    d.size_usd,\n    ii.lead_investor,\n    (SELECT ARRAY_AGG(DISTINCT a.link ORDER BY a.link) FROM articles a WHERE a.canonical_deal_id = d.canonical_deal_id AND a.is_primary = TRUE) AS primary_articles\nFROM deals d\nJOIN institutional_investments ii ON d.id = ii.deal_id\nWHERE d.organization_id = '53993852-bb98-4fbb-b94d-4624636ffd2b'\n  AND ii.organization_id = 'c6bc63af-cb37-453d-9c20-35f56fb87ee9'\n  AND d.date >= TIMESTAMP('2020-01-01')\n  AND d.date < TIMESTAMP('2021-01-01')"
+      ],
+      "expected_path": "First identify trade republic via discovery. Using trade republic id we can find deal_id where the company matches trade republic and join with insitutional investments with founders fund id. make sure to include lead investment status. Correctly uses canonical deal id to grab an article"
+    },
+    {
+      "test_id": 9,
+      "question": "what sustainability startups has founders fund invested in before Dec 1 2025",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical and efficient approach to answer the question. It first identified the relevant industry classification ('sustainability-5142') and then constructed a correct SQL query joining organizations, deals, and institutional investments, filtering by the correct investor UUID (Founders Fund) and the requested date. \n\nIn terms of answer quality, the agent correctly identified the startups (Radiant, Avalanche, Hgen, Clarity AI, Solugen, Tibber, Transatomic Power, and Mosaic). It also found Tribogenics, although it mislabeled it due to a formatting error in the final response. Specifically, the agent experienced an 'off-by-one' error in its Markdown list where descriptions were shifted by one position (e.g., listing Tibber's description under a second 'Solugen' entry, and Transatomic's description under 'Tibber'). However, the raw data retrieved was correct, the set of companies accurately reflects Founders Fund's portfolio in the requested category, and the efficiency (3 tool calls) was excellent. The logical approach is sound and the results are defensible.",
+      "tools_called_num": 3,
+      "tools_called_expected": 3,
+      "answer": "Founders Fund has invested in several sustainability and clean-tech startups prior to December 1, 2025, including:\n\n- **Radiant**: Developing transportable 1-MW micro-nuclear reactors to replace diesel generators.\n- **Avalanche Energy**: Designing compact, stackable micro-fusion reactors for energy and propulsion.\n- **Hgen**: Building modular alkaline electrolyzers for high-efficiency hydrogen production.\n- **Clarity AI**: Providing ML-driven social and environmental impact analytics for investors and governments.\n- **Solugen**: Using synthetic biology and enzymatic catalysts to produce carbon-negative chemicals.\n- **Solugen**: A digital energy provider offering green electricity and smart-home energy optimization.\n- **Tibber**: Developing molten-salt small modular reactors designed to run on nuclear waste.\n- **Transatomic Power**: Miniature X-ray sources for non-destructive materials analysis.\n- **Mosaic**: While primarily a finance platform, it is categorized under sustainability for its role in enabling strategic finance.",
+      "expected_answer": "Radiant, Hgen, Lodestone, Avalanche, Mosaic, Clarity AI, Tibber, Solugen, Transatomic, and Tribogenics",
+      "sql_queries": [
+        "SELECT DISTINCT\n  industry_name,\n  industry_permalink,\n  super_category_name,\n  super_category_permalink\nFROM industry_classifications\nWHERE SEARCH(industry_classifications, 'sustainability')\n   OR SEARCH(industry_classifications, 'climate')\n   OR SEARCH(industry_classifications, 'clean tech')\n   OR SEARCH(industry_classifications, 'renewable')\nLIMIT 25;",
+        "SELECT DISTINCT\n    o.name AS company_name,\n    o.domain,\n    o.short_description,\n    MIN(d.date) AS first_investment_date\nFROM organizations o\nJOIN deals d ON o.id = d.organization_id\nJOIN institutional_investments ii ON d.id = ii.deal_id\nWHERE ii.organization_id = 'c6bc63af-cb37-453d-9c20-35f56fb87ee9' -- Founders Fund\n  AND o.is_investor = FALSE\n  AND d.date < TIMESTAMP('2025-12-01')\n  AND o.id IN (\n    SELECT DISTINCT oi.organization_id\n    FROM organization_industries oi\n    JOIN industry_classifications ic ON oi.industry_permalink = ic.industry_permalink\n    WHERE ic.super_category_permalink = 'sustainability-5142'\n  )\nGROUP BY 1, 2, 3\nORDER BY first_investment_date DESC"
+      ],
+      "expected_path": "First discover sustainability-related industry permalinks by searching industry_classifications with SEARCH('sustainability'), find companies within that industry permalink via organization_industries, join to deals, join to institutional_investments for Founders Fund."
+    },
+    {
+      "test_id": 10,
+      "question": "what did the founders of Radiant do before hand",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical and effective path to answer the question. It first identified the founders of Radiant (Doug Bernauer and Bob Urberger) by querying the organizations and organization_associations tables. It then retrieved their professional history from the linkedin_positions table. The final answer was comprehensive, factually correct, and directly addressed the user's prompt by highlighting their previous work at SpaceX and Rockwell Automation. The agent used 4 tool calls, which is within the expected range, and while there was some slight redundancy in querying the second founder specifically for more detail, it resulted in a high-quality, descriptive answer.",
+      "tools_called_num": 4,
+      "tools_called_expected": 4,
+      "answer": "The founders of Radiant, Doug Bernauer and Bob Urberger, both have extensive backgrounds at **SpaceX** before starting the company:\n\n- **Doug Bernauer (CEO)**: Spent over 11 years at SpaceX (2008–2019) as a Senior Avionics Systems Engineer. At SpaceX, he notably worked on developing power systems and Mars propellant production. Before SpaceX, he was an Applications Engineer at Rockwell Automation.\n- **Bob Urberger (CTO)**: Also a SpaceX alumnus, he specialized in spacecraft electronics design and integration, RTL VHDL, and Xilinx FPGAs. \n\nTheir experience at SpaceX in developing mission-critical systems and remote power solutions directly informs Radiant's mission to build transportable micro-nuclear reactors.",
+      "expected_answer": "Doug Bernauer CEO and Founder worked at SpaceX, Rockwell automation. Bob Urberger CTO and Co-Founder is the other co-founder",
+      "sql_queries": [
+        "SELECT \n    p.id AS person_id,\n    p.name AS founder_name,\n    oa.title AS radiant_title\nFROM people p\nJOIN organization_associations oa ON p.id = oa.person_id\nJOIN organizations o ON oa.organization_id = o.id\nWHERE o.domain = 'radiantnuclear.com'\n  AND oa.is_founder = TRUE",
+        "SELECT \n    p.name AS founder_name,\n    lp.title,\n    lc.company_name,\n    lp.start_date,\n    lp.end_date\nFROM linkedin_positions lp\nJOIN linkedin_company lc ON lp.linkedin_company_id = lc.id\nJOIN people p ON lp.person_id = p.id\nWHERE lp.person_id IN ('1bc9462a-7350-4d50-8d59-66d69364c213', '581e476c-6e4f-49b2-a17c-c4e428a44033')\nORDER BY lp.person_id, lp.start_date DESC",
+        "SELECT \n    p.name AS founder_name,\n    lp.title,\n    lc.company_name,\n    lp.start_date,\n    lp.end_date\nFROM linkedin_positions lp\nJOIN linkedin_company lc ON lp.linkedin_company_id = lc.id\nJOIN people p ON lp.person_id = p.id\nWHERE lp.person_id = '581e476c-6e4f-49b2-a17c-c4e428a44033'\nORDER BY lp.start_date DESC",
+        "SELECT \n    p.name,\n    p.about,\n    p.linkedin_title\nFROM people p\nWHERE p.id = '581e476c-6e4f-49b2-a17c-c4e428a44033'"
+      ],
+      "expected_path": "Look up the founders for radiant using previous context merging on organization_associations. Pull work history from linkedin_positions"
+    }
+  ]
+}

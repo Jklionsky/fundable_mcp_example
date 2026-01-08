@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "total_tests": 10,
+    "passed": 8,
+    "failed": 2,
+    "pass_rate": 80,
+    "timestamp": "2026-01-07T20:30:18.276Z",
+    "duration_ms": 297948,
+    "duration": "4m 57s",
+    "total_tool_calls": 15,
+    "total_expected_tool_calls": 25
+  },
+  "tests": [
+    {
+      "test_id": 1,
+      "question": "how many deals happened in 2024",
+      "grade": "pass",
+      "reasoning": "The agent used a sound, direct approach: a single SQL query that counts distinct deal IDs filtered by year = 2024 (EXTRACT(YEAR FROM d.date) = 2024). This matches the expected method (count unique financings in 2024). Efficiency is excellent — one query only, no unnecessary calls. The answer (“There were 16,549 deals in 2024”) is defensible given the query. There are no evident logical flaws (the DISTINCT prevents double-counting, the year filter addresses the requirement). Given the information provided, the same grade would apply to any other model that performed the identical query and returned the same result.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "There were 16,549 deals in 2024.",
+      "expected_answer": "There were 16,549 deals in 2024",
+      "sql_queries": [
+        "SELECT COUNT(DISTINCT d.id) AS deal_count\nFROM deals d\nWHERE EXTRACT(YEAR FROM d.date) = 2024;"
+      ],
+      "expected_path": "Query unique financings with date in 2024."
+    },
+    {
+      "test_id": 2,
+      "question": "how many times has https://ramp.com/ raised and how much have they raised all time",
+      "grade": "pass",
+      "reasoning": "The agent took a reasonable, direct approach that matches the expected method: it located the organization by domain, excluded investor entities (is_investor = FALSE), counted distinct deal IDs, and summed deal sizes. The single SQL query is logically correct (joining organizations to deals and applying the required filters) and efficient (one tool call, within the expected limit). The reported result (15 raises totaling $2,977.0 million) follows directly from the query. The only minor caveat is a potential ambiguity about the units of d.size_usd in the schema (the query alias implies millions), but the agent clearly reported the result as millions of USD, so this is a reasonable interpretation and not a flaw. Overall the approach, efficiency, and answer are defensible.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "Ramp (ramp.com) has raised 15 times, totaling $2,977.0 million (USD).",
+      "expected_answer": "Ramp has raised 14 times for a total of $2.83 billion all time",
+      "sql_queries": [
+        "SELECT COUNT(DISTINCT d.id) AS deal_count,\n       ROUND(SUM(COALESCE(d.size_usd,0)),2) AS total_raised_usd_millions\nFROM organizations o\nJOIN deals d\n  ON d.organization_id = o.id\nWHERE LOWER(o.domain) = 'ramp.com'\n  AND o.is_investor = FALSE;"
+      ],
+      "expected_path": "Find Ramp using domain = 'ramp.com', ensure is_investor = FALSE use num_funding_rounds to count deals and total_raised for total amount"
+    },
+    {
+      "test_id": 3,
+      "question": "how much has ramp raised and how many times have they raised from 2024 to the end of 2025",
+      "grade": "fail",
+      "reasoning": "The agent took a generally reasonable and efficient approach (single SQL query joining organizations to deals, counting distinct deals and summing size_usd, and restricting dates to 2024–2025). However the agent omitted a core requirement: exclude SECONDARY_MARKET financing_type. Because that filter was missing, the reported total ($1,300.0M) is not defensible against the task instructions and may be inflated. Efficiency was good (one tool call), and the join/aggregation logic was otherwise sound, but the missing financing_type exclusion is a substantive correctness error. The correct fix is to add a condition such as AND d.financing_type <> 'SECONDARY_MARKET' (handling NULLs as needed) and re-run the query. If that yields 6 deals and $1,150M, the expected-answer example would be matched; as provided, the answer is incorrect given the stated requirements.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "From 2024 through 2025, Ramp raised 6 times, totaling $1,300.0 million (USD).",
+      "expected_answer": "Ramp has raised 6 times and $1,150 million from 2024 to the end of 2025",
+      "sql_queries": [
+        "SELECT COUNT(DISTINCT d.id) AS deal_count,\n       ROUND(SUM(COALESCE(d.size_usd,0)),2) AS total_raised_usd_millions\nFROM organizations o\nJOIN deals d\n  ON d.organization_id = o.id\nWHERE LOWER(o.domain) = 'ramp.com'\n  AND o.is_investor = FALSE\n  AND d.date >= TIMESTAMP('2024-01-01')\n  AND d.date < TIMESTAMP('2026-01-01');"
+      ],
+      "expected_path": "Using context on ramp from previous question, calculate total deal count in timeframe for total_raised make sure to exclude SECONDARY_MARKET financing_type."
+    },
+    {
+      "test_id": 4,
+      "question": "who is ramp ceo and what is his linkedin and email",
+      "grade": "pass",
+      "reasoning": "The agent used a sound, direct approach that matches the expected method: joining organizations → organization_associations → people and filtering for the Ramp domain and current CEO/title. The SQL is logically correct (including a safe fallback by checking title for 'ceo') and returns the requested fields (name, linkedin_person_url, email). The factual answer (Eric Glyman, https://www.linkedin.com/in/eglyman/, eric@ramp.com) matches the expected result. Efficiency is excellent — the agent completed the task with a single query (within the expected tool-call allowance). Overall the approach, correctness, and efficiency justify a pass.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "Ramp's CEO is Eric Glyman.\n- LinkedIn: https://www.linkedin.com/in/eglyman/\n- Email: eric@ramp.com",
+      "expected_answer": "Ramp's CEO is Eric Glyman and his linkedin is https://www.linkedin.com/in/eglyman and his email is eric@ramp.com",
+      "sql_queries": [
+        "SELECT p.id AS person_id,\n       p.name,\n       p.linkedin_person_url,\n       p.email,\n       oa.title,\n       oa.is_ceo,\n       oa.is_current\nFROM organizations o\nJOIN organization_associations oa\n  ON oa.organization_id = o.id\nJOIN people p\n  ON p.id = oa.person_id\nWHERE LOWER(o.domain) = 'ramp.com'\n  AND o.is_investor = FALSE\n  AND oa.is_current = TRUE\n  AND (oa.is_ceo = TRUE OR LOWER(COALESCE(oa.title,'')) LIKE '%ceo%')\nLIMIT 50;"
+      ],
+      "expected_path": "Join ramp organization to organization_associations WHERE is_ceo = TRUE, join to people, return name, linkedin_person_url, and email."
+    },
+    {
+      "test_id": 5,
+      "question": "who was the lead investor in ramp june 2025 round",
+      "grade": "pass",
+      "reasoning": "The agent used a sound, direct approach that matches the expected method: joining Ramp's organization to deals restricted to June 2025, then to institutional_investments filtered for lead_investor = TRUE, and returning the investor organization. The single SQL query executed captures the required filters (company domain, deal date window, and lead_investor flag) and returns the investor name and domain. The final answer — Founders Fund (foundersfund.com) as the lead investor, with no personnel/fund recorded — follows directly from the query results and aligns with the expected example. Efficiency is good (1 query, within the expected limit). There are no logical flaws, missing core requirements, or unnecessary extra queries, so the task is successfully completed.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "The lead investor in Ramp's June 2025 round was Founders Fund (foundersfund.com).  \nNo specific personnel or fund was recorded for the lead investor in the dataset.",
+      "expected_answer": "Founders Fund was the lead investor in Ramp's June 2025 round",
+      "sql_queries": [
+        "SELECT ii.lead_investor,\n       inv.id AS investor_id,\n       inv.name AS investor_name,\n       inv.domain AS investor_domain,\n       ii.personnel,\n       ii.fund,\n       d.id AS deal_id,\n       d.date\nFROM organizations company\nJOIN deals d\n  ON d.organization_id = company.id\nJOIN institutional_investments ii\n  ON ii.deal_id = d.id\nJOIN organizations inv\n  ON inv.id = ii.organization_id\nWHERE LOWER(company.domain) = 'ramp.com'\n  AND company.is_investor = FALSE\n  AND d.date >= TIMESTAMP('2025-06-01')\n  AND d.date < TIMESTAMP('2025-07-01')\n  AND ii.lead_investor = TRUE;"
+      ],
+      "expected_path": "Join ramp organization to deals WHERE date in June 2025 (EXTRACT(MONTH) = 6 AND EXTRACT(YEAR) = 2025), join to institutional_investments WHERE lead_investor = TRUE, return investor organization name."
+    },
+    {
+      "test_id": 6,
+      "question": "which investor has taken part in the most ramp rounds - return the top 5",
+      "grade": "pass",
+      "reasoning": "The agent used a sound, direct approach that matches the expected method: joining the Ramp organization to deals, linking to institutional_investments and investor organizations, grouping by investor, counting distinct deals, ordering, and limiting to 5. The SQL is logically correct (appropriate joins and filters) and returns the requested top-5 investors with counts. The result (Founders Fund and Thrive Capital with 9, Coatue 8, Definition Capital 7, Lux Capital 7) matches the example output and is defensible. Efficiency is good — only one tool/query was used (well within the expected guideline). There are no obvious flaws in logic, missing requirements, or unnecessary extra queries. This same grade would apply to any other model that produced the same query and results.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "Top 5 investors by number of Ramp rounds participated in:\n\n1. Founders Fund (foundersfund.com) — 9 rounds  \n2. Thrive Capital (thrivecap.com) — 9 rounds  \n3. Coatue (coatue.com) — 8 rounds  \n4. Definition Capital (definitioncap.com) — 7 rounds  \n5. Lux Capital (luxcapital.com) — 7 rounds",
+      "expected_answer": "Here are the top 5 investors who have participated in the most Ramp rounds:\n\n1. **Founders Fund** - 9 deals\n2. **Thrive Capital** - 9 deals\n3. **Coatue** - 8 deals\n4. **Lux Capital** - 7 deals\n5. **Definition Capital** - 7 deals",
+      "sql_queries": [
+        "SELECT inv.id AS investor_id,\n       inv.name AS investor_name,\n       inv.domain AS investor_domain,\n       COUNT(DISTINCT ii.deal_id) AS rounds_participated\nFROM organizations company\nJOIN deals d\n  ON d.organization_id = company.id\nJOIN institutional_investments ii\n  ON ii.deal_id = d.id\nJOIN organizations inv\n  ON inv.id = ii.organization_id\nWHERE LOWER(company.domain) = 'ramp.com'\n  AND company.is_investor = FALSE\n  AND inv.is_investor = TRUE\nGROUP BY investor_id, investor_name, investor_domain\nORDER BY rounds_participated DESC\nLIMIT 5;"
+      ],
+      "expected_path": "Join ramp organization to deals, join to institutional_investments, join to investor organizations, GROUP BY investor, COUNT deals per investor, ORDER BY count DESC, LIMIT 5."
+    },
+    {
+      "test_id": 7,
+      "question": "who is the managing partner at founders fund",
+      "grade": "pass",
+      "reasoning": "The agent used a sound, direct approach: joining organizations -> organization_associations -> people and filtering for the Founders Fund domain, current associations, and titles matching 'managing partner'. The SQL is logically correct and implements the expected strategy. The returned answer (Peter Thiel) matches the expected result and the agent included supporting person data (LinkedIn URL) and noted missing email. Efficiency is excellent — the task was completed with a single query (well within the expected ≤2 calls). There are no evident logical flaws, scalability issues, or unnecessary queries; the same grade would apply to another model performing the identical actions.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "The managing partner at Founders Fund is Peter Thiel.  \n- LinkedIn: https://www.linkedin.com/in/peterthiel/  \n- Email: not listed in the dataset.",
+      "expected_answer": "Peter Thiel is the managing partner at Founders Fund",
+      "sql_queries": [
+        "SELECT p.id AS person_id,\n       p.name,\n       oa.title,\n       p.linkedin_person_url,\n       p.email,\n       oa.is_current\nFROM organizations o\nJOIN organization_associations oa\n  ON oa.organization_id = o.id\nJOIN people p\n  ON p.id = oa.person_id\nWHERE LOWER(o.domain) = 'foundersfund.com'\n  AND o.is_investor = TRUE\n  AND oa.is_current = TRUE\n  AND LOWER(COALESCE(oa.title,'')) LIKE '%managing partner%'\nLIMIT 50;"
+      ],
+      "expected_path": "Given existing context on founders fund from previous question, join with organization_associations WHERE LOWER(title) LIKE '%managing partner%', join to people, return person details."
+    },
+    {
+      "test_id": 8,
+      "question": "tell me about founders fund 2020 investment in Trade Republic. did they lead the round. can you provide an article?",
+      "grade": "pass",
+      "reasoning": "The agent took a logical, defensible approach: discovered Trade Republic, located Founders Fund, used the company’s deals to find the 2020 Series B, and then used the canonical_deal_id to pull article links. The factual answer is correct — the April 2020 Series B (~$67.3M / €62M) lists Founders Fund as a lead/co-lead (with Accel) — and the agent provided appropriate article links (TechCrunch and Finsmes). Efficiency is good: 4 queries is within the expected range and the queries follow a reasonable discovery → join → article retrieval flow (no redundant calls). Overall the agent met the task requirements (identified the deal, confirmed lead status, and returned an article), so the result deserves a pass.",
+      "tools_called_num": 4,
+      "tools_called_expected": 4,
+      "answer": "Founders Fund participated in Trade Republic’s Series B on 2020-04-17. The round was $67.3M (size_usd in the dataset), and Founders Fund is marked as a lead investor (co-leading the round alongside Accel).\n\nArticles:\n- TechCrunch: https://techcrunch.com/2020/04/16/trade-republic-a-german-robinhood-raises-67m-led-by-accel-and-founders-fund  \n- Finsmes (primary article in the dataset): https://www.finsmes.com/2020/04/trade-republic-raises-e62m-in-series-b-funding.html",
+      "expected_answer": "Founders Fund was a lead investor in the Apr 2020 Series B where they raised $67.3M. Here is an article: https://www.finsmes.com/2020/04/trade-republic-raises-e62m-in-series-b-funding.html",
+      "sql_queries": [
+        "SELECT id, name, domain, is_investor\nFROM organizations\nWHERE SEARCH(organizations, 'trade republic')\nLIMIT 25;",
+        "SELECT id, name, domain, is_investor\nFROM organizations\nWHERE LOWER(domain) = 'foundersfund.com' OR SEARCH(organizations, 'founders fund')\nLIMIT 25;",
+        "SELECT d.id AS deal_id,\n       d.canonical_deal_id,\n       d.date,\n       d.size_usd,\n       inv.id AS investor_id,\n       inv.name AS investor_name,\n       inv.domain AS investor_domain,\n       ii.lead_investor\nFROM deals d\nJOIN institutional_investments ii\n  ON ii.deal_id = d.id\nJOIN organizations inv\n  ON inv.id = ii.organization_id\nWHERE d.organization_id = '53993852-bb98-4fbb-b94d-4624636ffd2b'\n  AND EXTRACT(YEAR FROM d.date) = 2020\nORDER BY d.date;\n",
+        "SELECT d.id AS deal_id,\n       FORMAT_TIMESTAMP('%Y-%m-%d', d.date) AS deal_date,\n       d.size_usd,\n       d.financing_type,\n       ii.lead_investor,\n       inv.name AS investor_name,\n       a.link AS article_link,\n       a.is_primary,\n       a.source_priority\nFROM deals d\nJOIN institutional_investments ii\n  ON ii.deal_id = d.id\nJOIN organizations inv\n  ON inv.id = ii.organization_id\nLEFT JOIN articles a\n  ON a.canonical_deal_id = d.canonical_deal_id\nWHERE d.canonical_deal_id = '57b74141-1544-4cca-a31f-84ff6eb32fd1'\nORDER BY a.is_primary DESC, a.source_priority ASC\nLIMIT 10;"
+      ],
+      "expected_path": "First identify trade republic via discovery. Using trade republic id we can find deal_id where the company matches trade republic and join with insitutional investments with founders fund id. make sure to include lead investment status. Correctly uses canonical deal id to grab an article"
+    },
+    {
+      "test_id": 9,
+      "question": "what sustainability startups has founders fund invested in before Dec 1 2025",
+      "grade": "fail",
+      "reasoning": "Test execution crashed with error: Bad control character in string literal in JSON at position 761",
+      "tools_called_num": 0,
+      "tools_called_expected": 3,
+      "answer": "",
+      "expected_answer": "Radiant, Hgen, Lodestone, Avalanche, Mosaic, Clarity AI, Tibber, Solugen, Transatomic, and Tribogenics",
+      "sql_queries": [],
+      "expected_path": "First discover sustainability-related industry permalinks by searching industry_classifications with SEARCH('sustainability'), find companies within that industry permalink via organization_industries, join to deals, join to institutional_investments for Founders Fund."
+    },
+    {
+      "test_id": 10,
+      "question": "what did the founders of Radiant do before hand",
+      "grade": "pass",
+      "reasoning": "The agent followed a reasonable, data-driven approach matching the expected method: it located the Radiant org record, pulled founder associations, and queried LinkedIn positions to summarize prior work. The factual answer matches the expected result — Doug Bernauer (CEO/founder) with prior roles at SpaceX and Rockwell Automation, and Bob Urberger (CTO/co‑founder) with no structured linkedin_positions entries but profile/about text indicating spacecraft/avionics expertise. Efficiency is acceptable: 4 queries (within the expected ≤4) and the queries are logically ordered (discover org → get founders + positions → validate person records). The agent also responsibly noted the limitation (missing structured prior positions for Bob) and offered to fetch more detail. Overall the approach, correctness, and efficiency justify a pass.",
+      "tools_called_num": 4,
+      "tools_called_expected": 4,
+      "answer": "Founders of Radiant and their prior experience (from the dataset):\n\n1. Doug Bernauer — LinkedIn: https://www.linkedin.com/in/doug-bernauer-6651249/  \n   - Prior roles recorded:\n     - Sr. Avionics Systems Engineer, SpaceX (2008‑01‑01 to 2019‑11‑01)  \n     - Applications Engineer, Rockwell Automation (2006‑01‑01 to 2008‑01‑01)  \n   - LinkedIn title in dataset: Chief Executive Officer\n\n2. Bob Urberger — LinkedIn: https://www.linkedin.com/in/bob-urberger-a1a46647/  \n   - Dataset shows he is co‑founder & CTO at Radiant.  \n   - No structured prior company positions recorded in linkedin_positions, but his profile/about lists specialties in spacecraft electronics design and integration (RTL VHDL, Xilinx FPGAs), indicating a background in spacecraft/avionics engineering.\n\nIf you want, I can pull full LinkedIn work history entries (where available) or search for press/biography links for each founder.",
+      "expected_answer": "Doug Bernauer CEO and Founder worked at SpaceX, Rockwell automation. Bob Urberger CTO and Co-Founder is the other co-founder",
+      "sql_queries": [
+        "SELECT id, name, domain, linkedin\nFROM organizations\nWHERE LOWER(domain) = 'radiantnuclear.com'\nLIMIT 1;",
+        "SELECT p.id AS person_id,\n       p.name,\n       p.linkedin_person_url,\n       p.email,\n       ARRAY_AGG(STRUCT(\n         lp.title AS title,\n         COALESCE(lc.company_name, lp.linkedin_company_id) AS company_name,\n         FORMAT_TIMESTAMP('%Y-%m-%d', lp.start_date) AS start_date,\n         FORMAT_TIMESTAMP('%Y-%m-%d', lp.end_date) AS end_date\n       ) ORDER BY COALESCE(lp.end_date, lp.start_date) DESC LIMIT 5) AS prior_positions\nFROM organization_associations oa\nJOIN people p\n  ON p.id = oa.person_id\nLEFT JOIN linkedin_positions lp\n  ON lp.person_id = p.id\nLEFT JOIN linkedin_company lc\n  ON lc.id = lp.linkedin_company_id\nWHERE oa.organization_id = '9c856d5f-2a5d-450d-9656-6e24cd0cdadb'\n  AND oa.is_founder = TRUE\n  -- exclude positions at Radiant (linkedin slug stored on organizations.linkedin)\n  AND (lp.linkedin_company_id IS NULL OR lp.linkedin_company_id != 'r-a-d-i-a-n-t')\nGROUP BY person_id, p.name, p.linkedin_person_url, p.email;\n",
+        "SELECT oa.organization_id, o.name AS organization_name, oa.title, oa.is_current, oa.is_founder\nFROM organization_associations oa\nLEFT JOIN organizations o\n  ON o.id = oa.organization_id\nWHERE oa.person_id = '581e476c-6e4f-49b2-a17c-c4e428a44033';",
+        "SELECT p.id, p.name, p.linkedin_person_url, p.linkedin_title, p.about\nFROM people p\nWHERE p.id IN ('581e476c-6e4f-49b2-a17c-c4e428a44033','1bc9462a-7350-4d50-8d59-66d69364c213');"
+      ],
+      "expected_path": "Look up the founders for radiant using previous context merging on organization_associations. Pull work history from linkedin_positions"
+    }
+  ]
+}

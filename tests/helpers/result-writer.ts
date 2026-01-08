@@ -22,6 +22,7 @@ import { TestResult, TestSummary, FailureDetail, UnifiedTestResult, UnifiedResul
  * @param results Test results to save
  * @param suiteName Test suite name (easy, medium, hard, or all)
  * @param modelName LLM model identifier (e.g., gpt-4o, claude-sonnet-4)
+ * @param durationMs Duration of test run in milliseconds
  * @param outputDir Output directory (defaults to ./tests/results)
  * @returns Path to saved file
  */
@@ -29,6 +30,7 @@ export async function saveResults(
   results: UnifiedTestResult[],
   suiteName: string = 'all',
   modelName: string = 'unknown',
+  durationMs: number = 0,
   outputDir: string = './tests/results'
 ): Promise<string> {
   // Sanitize model name for filename (remove slashes, spaces, etc.)
@@ -50,7 +52,7 @@ export async function saveResults(
   }
 
   // Build unified output
-  const output = buildUnifiedResults(results);
+  const output = buildUnifiedResults(results, durationMs);
 
   // Write to file with pretty formatting
   fs.writeFileSync(filepath, JSON.stringify(output, null, 2));
@@ -61,15 +63,31 @@ export async function saveResults(
 }
 
 /**
+ * Format duration in human-readable form
+ */
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
+/**
  * Build unified result output from test results
  *
  * Creates a single unified structure with metadata and all test details.
  */
-export function buildUnifiedResults(results: UnifiedTestResult[]): UnifiedResultOutput {
+export function buildUnifiedResults(results: UnifiedTestResult[], durationMs: number = 0): UnifiedResultOutput {
   const total = results.length;
   const passed = results.filter(r => r.grade === 'pass').length;
   const failed = results.filter(r => r.grade === 'fail').length;
   const passRate = total > 0 ? (passed / total) * 100 : 0;
+
+  // Calculate tool call statistics
+  const totalToolCalls = results.reduce((sum, r) => sum + r.tools_called_num, 0);
+  const totalExpectedToolCalls = results.reduce((sum, r) => sum + r.tools_called_expected, 0);
 
   const metadata: TestMetadata = {
     total_tests: total,
@@ -77,6 +95,10 @@ export function buildUnifiedResults(results: UnifiedTestResult[]): UnifiedResult
     failed,
     pass_rate: passRate,
     timestamp: new Date().toISOString(),
+    duration_ms: durationMs,
+    duration: formatDuration(durationMs),
+    total_tool_calls: totalToolCalls,
+    total_expected_tool_calls: totalExpectedToolCalls,
   };
 
   return {
@@ -159,6 +181,8 @@ export function printSummary(output: UnifiedResultOutput): void {
   console.log(`Passed:         ${metadata.passed} ✅`);
   console.log(`Failed:         ${metadata.failed} ❌`);
   console.log(`Pass Rate:      ${metadata.pass_rate.toFixed(1)}%`);
+  console.log(`Duration:       ${formatDuration(metadata.duration_ms)}`);
+  console.log(`Tool Calls:     ${metadata.total_tool_calls} / ${metadata.total_expected_tool_calls} expected`);
   console.log('═'.repeat(60));
 
   // Show failed tests

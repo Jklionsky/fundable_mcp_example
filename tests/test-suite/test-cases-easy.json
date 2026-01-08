@@ -3,70 +3,70 @@
     "id": 1,
     "question": "how many deals happened in 2024",
     "max_tool_calls": 2,
-    "expected_path_description": "Query unique deals with date in 2024.",
-    "expected_answer": "There were 16,553 deals deals in 2024"
+    "expected_path_description": "Query unique financings with date in 2024.",
+    "expected_answer": "There were 16,549 deals in 2024"
   },
   {
     "id": 2,
-    "question": "how many times has https://ramp.com/ raised",
+    "question": "how many times has https://ramp.com/ raised and how much have they raised all time",
     "max_tool_calls": 2,
-    "expected_path_description": "Find Ramp using domain = 'ramp.com', ensure is_investor = FALSE use num_funding_rounds to count deals.",
-    "expected_answer": "Ramp has raised 15 times"
+    "expected_path_description": "Find Ramp using domain = 'ramp.com', ensure is_investor = FALSE use num_funding_rounds to count deals and total_raised for total amount",
+    "expected_answer": "Ramp has raised 14 times for a total of $2.83 billion all time"
   },
   {
     "id": 3,
-    "question": "how much has ramp raised all time",
-    "max_tool_calls": 2,
-    "expected_path_description": "Find Ramp using domain = 'ramp.com', ensure is_investor = FALSE use total_raised to get total raised.",
-    "expected_answer": "Ramp has raised $2.8 billion all time"
-  },
-  {
-    "id": 4,
     "question": "how much has ramp raised and how many times have they raised from 2024 to the end of 2025",
     "max_tool_calls": 2,
     "expected_path_description": "Using context on ramp from previous question, calculate total deal count in timeframe for total_raised make sure to exclude SECONDARY_MARKET financing_type.",
     "expected_answer": "Ramp has raised 6 times and $1,150 million from 2024 to the end of 2025"
   },
   {
-    "id": 5,
+    "id": 4,
     "question": "who is ramp ceo and what is his linkedin and email",
     "max_tool_calls": 2,
     "expected_path_description": "Join ramp organization to organization_associations WHERE is_ceo = TRUE, join to people, return name, linkedin_person_url, and email.",
     "expected_answer": "Ramp's CEO is Eric Glyman and his linkedin is https://www.linkedin.com/in/eglyman and his email is eric@ramp.com"
   },
   {
-    "id": 6,
+    "id": 5,
     "question": "who was the lead investor in ramp june 2025 round",
     "max_tool_calls": 2,
     "expected_path_description": "Join ramp organization to deals WHERE date in June 2025 (EXTRACT(MONTH) = 6 AND EXTRACT(YEAR) = 2025), join to institutional_investments WHERE lead_investor = TRUE, return investor organization name.",
     "expected_answer": "Founders Fund was the lead investor in Ramp's June 2025 round"
   },
   {
-    "id": 7,
+    "id": 6,
     "question": "which investor has taken part in the most ramp rounds - return the top 5",
     "max_tool_calls": 2,
     "expected_path_description": "Join ramp organization to deals, join to institutional_investments, join to investor organizations, GROUP BY investor, COUNT deals per investor, ORDER BY count DESC, LIMIT 5.",
     "expected_answer": "Here are the top 5 investors who have participated in the most Ramp rounds:\n\n1. **Founders Fund** - 9 deals\n2. **Thrive Capital** - 9 deals\n3. **Coatue** - 8 deals\n4. **Lux Capital** - 7 deals\n5. **Definition Capital** - 7 deals"
   },
   {
-    "id": 8,
+    "id": 7,
     "question": "who is the managing partner at founders fund",
     "max_tool_calls": 2,
     "expected_path_description": "Given existing context on founders fund from previous question, join with organization_associations WHERE LOWER(title) LIKE '%managing partner%', join to people, return person details.",
     "expected_answer": "Peter Thiel is the managing partner at Founders Fund"
   },
   {
+    "id": 8,
+    "question": "tell me about founders fund 2020 investment in Trade Republic. did they lead the round. can you provide an article?",
+    "max_tool_calls": 4,
+    "expected_path_description": "First identify trade republic via discovery. Using trade republic id we can find deal_id where the company matches trade republic and join with insitutional investments with founders fund id. make sure to include lead investment status. Correctly uses canonical deal id to grab an article",
+    "expected_answer": "Founders Fund was a lead investor in the Apr 2020 Series B where they raised $67.3M. Here is an article: https://www.finsmes.com/2020/04/trade-republic-raises-e62m-in-series-b-funding.html"
+  },
+  {
     "id": 9,
-    "question": "how many seed round deals has founders fund invested in all time",
-    "max_tool_calls": 2,
-    "expected_path_description": "Given existing context on founders fund from previous question, join with institutional_investments, join to deals WHERE LOWER(financing_type) = 'seed', COUNT deals.",
-    "expected_answer": "Founders Fund has invested in 110 seed round deals in all time"
+    "question": "what sustainability startups has founders fund invested in before Dec 1 2025",
+    "max_tool_calls": 3,
+    "expected_path_description": "First discover sustainability-related industry permalinks by searching industry_classifications with SEARCH('sustainability'), find companies within that industry permalink via organization_industries, join to deals, join to institutional_investments for Founders Fund.",
+    "expected_answer": "Radiant, Hgen, Lodestone, Avalanche, Mosaic, Clarity AI, Tibber, Solugen, Transatomic, and Tribogenics"
   },
   {
     "id": 10,
-    "question": "how many sustainability startups has founders fund invested in before Dec 1 2025",
-    "max_tool_calls": 3,
-    "expected_path_description": "First discover sustainability-related industry permalinks by searching industry_classifications with SEARCH('sustainability'), find companies within that industry permalink via organization_industries, join to deals, join to institutional_investments for Founders Fund, COUNT distinct companies.",
-    "expected_answer": "Founders Fund has invested in 9+ sustainability startup"
+    "question": "what did the founders of Radiant do before hand",
+    "max_tool_calls": 4,
+    "expected_path_description": "Look up the founders for radiant using previous context merging on organization_associations. Pull work history from linkedin_positions",
+    "expected_answer": "Doug Bernauer CEO and Founder worked at SpaceX, Rockwell automation. Bob Urberger CTO and Co-Founder is the other co-founder"
   }
 ]

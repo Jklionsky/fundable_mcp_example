@@ -90,7 +90,15 @@ OPENAI_MODEL=gpt-5-mini  # Optional
 # ANTHROPIC_API_KEY=sk-your-api-key-here
 # ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
 
-# Recommend using openai model for highest accuracy + tool call efficiency. Gemini flash models tend to offer best combination of speed + accuracy.
+**Performance trends from testing:**
+
+All models see similar accuracy, but differ in speed, cost, and tool efficiency:
+
+- **Google Gemini Flash 3**: Fastest inference, lowest cost, as accurate as other models but least efficient with tool use
+- **OpenAI (gpt-5-mini)**: Similar cost profile to Gemini, 2x slower than Gemini, more efficient tool usage
+- **Anthropic (Claude Sonnet 4.5)**: Most efficient tool usage, similar latency to OpenAI, significantly higher cost per query
+
+*See `/tests/results` for sample test outputs across difficulty levels*
 ```
 
 ## Running the Agent

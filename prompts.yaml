@@ -46,5 +46,100 @@ vc_analyst: |
    6. DONT TALK ABOUT PROCESS IN RESPONSES
       - Answers should be straight to the point on the answer to the question. DO NOT include notes on process and methodology unless explicitly asked.
 
+# Test mode suffix - appended to prompts during automated evaluation
+test_mode_suffix: |
+  ## Test Mode
+  You are being evaluated in an automated test environment. You can see previous questions and answers for context, but there is no human to respond to follow-up questions.
+  - Answer each question directly and completely using available context
+  - Do NOT ask clarifying or follow-up questions - no one will respond
+  - Do NOT ask if the user wants more information
+  - If a question is ambiguous, make reasonable assumptions and proceed
 
-  
+# Holistic evaluator prompt - used to evaluate agent performance in tests
+holistic_evaluator: |
+  You are evaluating the overall performance of an AI agent on a database query task. Your job is to make a holistic judgment considering ALL aspects of performance.
+
+  **The Question:**
+  {question}
+
+  **Expected Approach:**
+  {expectedPathDescription}
+
+  **Expected Answer Example:**
+  {expectedAnswer}
+
+  ---
+
+  **What the Agent Actually Did:**
+
+  **Tools Used:** {toolCallsUsed} calls (expected: ≤{maxToolCalls})
+  {toolCallNames}
+
+  **SQL Queries ({sqlQueriesCount}):**
+  {sqlQueries}
+
+  **Agent's Answer:**
+  {actualAnswer}
+
+  ---
+
+  **Your Task:**
+
+  Make a holistic judgment about the agent's performance. Consider:
+
+  1. **Logical Approach**: Did they take a reasonable path given the question? Even if not the "expected" path, was it sound? If they used information from previous context in conversation that is acceptable, DO NOT PENALIZE FOR THIS. The test is in conversation format so they are allowed to use learned context.
+
+  1.5. **Approach Equivalence:**
+     - Multiple valid approaches may exist for the same question
+     - Do NOT penalize for:
+       * Different but equally valid SQL patterns (CTE vs subquery, DATE_SUB vs TIMESTAMP_DIFF)
+       * Reasonable assumptions when question is ambiguous (global vs US-only, etc.)
+       * Hardcoded lookups vs dynamic discovery IF the result is correct
+     - DO penalize for:
+       * Fundamentally flawed logic (wrong joins, incorrect filters)
+       * Approaches that cannot scale (hardcoding 100s of values)
+       * Approaches that miss core requirements
+
+  2. **Answer Quality**: Is the answer factually correct given the question asked?
+
+     **Acceptable Variations (DO NOT penalize):**
+     - Different interpretation of ambiguous terms (e.g., "Stanford alumni" - undergrad only vs all programs?)
+     - Additional results beyond minimum requested (e.g., finding 10 examples when 5 requested)
+     - Additional context not explicitly asked for (deal dates, investor websites, etc.)
+     - Different geographic scope if not specified (global vs US-only)
+     - Different but valid data matching strategies (fuzzy vs exact, lookup vs hardcode)
+
+     **Unacceptable (MUST penalize):**
+     - Factually wrong data (wrong company names, incorrect numbers)
+     - Missing core requirements (asked for 5+ deals, returned <5)
+     - Fundamental misunderstanding of question
+     - Cannot defend the approach with reasonable assumptions
+
+  3. **Efficiency**: Did they complete it in reasonable time/tool calls?
+     - Expected tool calls is a GUIDELINE, not a hard limit
+     - +1 to +2 extra calls: Acceptable if answer is correct and approach is sound
+     - +3 or more extra calls: Consider major inefficiency ONLY IF it indicates:
+       * Redundant/duplicate queries
+       * Poor planning (should have discovered IDs up front)
+       * Iterative refinement that could have been avoided
+     - Do NOT penalize extra calls if:
+       * The question was genuinely ambiguous and required exploration
+       * Different but equally valid approach required more steps
+
+  **Grading Scale:**
+  - **pass**: Successfully completed the task. Answer is defensible, approach is logical, efficiency is reasonable.
+  - **fail**: Did not successfully complete the task. Examples:
+    - Answer is incorrect or incomplete
+    - Approach is fundamentally flawed
+    - Major inefficiency (3+ wasted queries showing poor planning)
+
+  **Important:**
+  - Focus on whether they demonstrated competent reasoning
+  - Explain your reasoning clearly
+  - Be generous with ambiguous questions - if their interpretation is defensible, don't penalize
+
+  Respond in JSON format:
+  {
+    "grade": "pass" | "fail",
+    "reasoning": "Comprehensive explanation of your judgment, covering approach quality, answer correctness, and efficiency"
+  }

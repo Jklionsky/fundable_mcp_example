@@ -29,7 +29,7 @@
   },
   {
     "id": 5,
-    "question": "how many current CEOs previously worked at meta and curent company has more than 10 employees and what is their linkedin",
+    "question": "what current CEOs previously worked at meta and curent company has more than 10 employees and what is their linkedin",
     "max_tool_calls": 3,
     "expected_path_description": "Discover Meta in linkedin_company using SEARCH(linkedin_company, 'meta'), join to linkedin_positions to find people who worked there (end_date IS NOT NULL for former), join to organization_associations WHERE is_ceo=TRUE and organization has more than 10 employee (11-10k)",
     "expected_answer": "Koichi Yamaguchi (https://www.linkedin.com/in/koichi-yamaguchi-bb86576) and Maria Zhang (https://www.linkedin.com/in/mariarenhuizhang) are currently CEOs of companies larger than 10 people"
@@ -59,7 +59,7 @@
     "id": 9,
     "question": "how many deals did https://www.techstars.com/ fund in 2023",
     "max_tool_calls": 2,
-    "expected_path_description": "Find Techstars using domain = 'techstars.com' join to deals and filter year = 2023, COUNT distinct deals.",
+    "expected_path_description": "Find Techstars using domain = 'techstars.com' join to deals and filter year = 2023, COUNT distinct deal ids",
     "expected_answer": "Techstars funded 57 deals in 2023"
   },
   {

@@ -81,6 +81,10 @@ export interface TestMetadata {
   failed: number;
   pass_rate: number;
   timestamp: string;
+  duration_ms: number;
+  duration: string;  // Human-readable format (e.g., "2m 13s")
+  total_tool_calls: number;
+  total_expected_tool_calls: number;
 }
 
 export interface UnifiedTestResult {

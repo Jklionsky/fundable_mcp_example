@@ -1,0 +1,165 @@
+{
+  "metadata": {
+    "total_tests": 10,
+    "passed": 10,
+    "failed": 0,
+    "pass_rate": 100,
+    "timestamp": "2026-01-07T20:29:11.591Z",
+    "duration_ms": 180207,
+    "duration": "3m 0s",
+    "total_tool_calls": 23,
+    "total_expected_tool_calls": 29
+  },
+  "tests": [
+    {
+      "test_id": 1,
+      "question": "what investor has invested in more than 20 sf-based companies in 2024",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical and sound approach to answer the question. It correctly identified the necessary tables (organizations, deals, and institutional_investments) and established the proper joins. The SQL query filtered for San Francisco-based companies using a reasonable string match on the address, restricted the timeframe to the year 2024, and applied the correct aggregation and having clause to identify investors with more than 20 deals. The resulting answer provided the correct investor names and their respective counts, aligning perfectly with the expected results. Although the agent used four tool calls (three of which were redundant examples lookups), this is well within the acceptable margin for efficiency and did not impact the accuracy or quality of the final result.",
+      "tools_called_num": 4,
+      "tools_called_expected": 3,
+      "answer": "In 2024, the following investors made investments in more than 20 San Francisco-based companies:\n\n*   **Y Combinator**: 84 companies\n*   **Andreessen Horowitz**: 33 companies\n*   **General Catalyst**: 31 companies\n*   **Sequoia Capital**: 22 companies",
+      "expected_answer": "Y Combinator, Sequoia Capital, General Catalyst, and Andreessen Horowitz have invested in more than 20 SF-based companies in 2024",
+      "sql_queries": [
+        "SELECT\n    o_investor.name AS investor_name,\n    o_investor.domain AS investor_domain,\n    COUNT(DISTINCT d.organization_id) AS company_count\n  FROM institutional_investments ii\n  JOIN deals d ON ii.deal_id = d.id\n  JOIN organizations o_company ON d.organization_id = o_company.id\n  JOIN organizations o_investor ON ii.organization_id = o_investor.id\n  WHERE o_company.is_investor = FALSE\n    AND LOWER(o_company.address) LIKE '%san francisco%'\n    AND d.date >= TIMESTAMP('2024-01-01')\n    AND d.date < TIMESTAMP('2025-01-01')\n    AND o_investor.is_investor = TRUE\n  GROUP BY o_investor.domain, o_investor.name\n  HAVING company_count > 20\n  ORDER BY company_count DESC"
+      ],
+      "expected_path": "Filter organizations WHERE region/city matches SF (need to discover exact value), join to deals WHERE year = 2024, join to institutional_investments, GROUP BY investor organization, HAVING COUNT(DISTINCT company) > 20, return investor names and counts."
+    },
+    {
+      "test_id": 2,
+      "question": "how many founders went to Stanford Business School",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical and efficient approach to answer the question. It first searched the `linkedin_education` table to identify the specific ID for 'Stanford Business School' (Stanford GSB). It then performed a join across `people`, `linkedin_person_education`, and `organization_associations` to count unique individuals who are founders and attended that specific institution. This matches the expected approach perfectly. The tool usage was minimal (2 calls), and the final answer was clear and directly addressed the prompt.",
+      "tools_called_num": 2,
+      "tools_called_expected": 3,
+      "answer": "There are 749 founders in the dataset who attended the Stanford Graduate School of Business.",
+      "expected_answer": "539 Stanford undergrads are founders",
+      "sql_queries": [
+        "SELECT id, education_name, education_url\nFROM linkedin_education\nWHERE SEARCH(linkedin_education, 'Stanford Business School')\n   OR SEARCH(linkedin_education, 'Stanford GSB')\nLIMIT 25;",
+        "SELECT COUNT(DISTINCT p.id) AS founder_count\nFROM people p\nJOIN linkedin_person_education lpe ON p.id = lpe.person_id\nJOIN organization_associations oa ON p.id = oa.person_id\nWHERE lpe.linkedin_education_id = 'stanford-graduate-school-of-business'\n  AND oa.is_founder = TRUE"
+      ],
+      "expected_path": "Find Stanford in linkedin_education using SEARCH(linkedin_education, 'stanford business school') OR SEARCH(linkedin_education, 'stanford'), join to linkedin_person_education, join to people, filter WHERE is_founder = TRUE via organization_associations, COUNT distinct people."
+    },
+    {
+      "test_id": 3,
+      "question": "what stanford business school alumni have been part of companies that have raised more than 10B",
+      "grade": "pass",
+      "reasoning": "The agent executed the task perfectly with high efficiency. It used a single, well-constructed SQL query to join the relevant tables (people, education, associations, and organizations). It correctly identified the business school specific ID ('stanford-graduate-school-of-business') and applied the correct numerical filter for 'more than 10B' (using 10,000 as the value, since the database stores amounts in millions). The results provided (Sarah Friar at OpenAI and Ron Gabrisko at Databricks) are accurate based on the data and directly answer the user's question.",
+      "tools_called_num": 1,
+      "tools_called_expected": 3,
+      "answer": "The Stanford Graduate School of Business alumni in the dataset who have been part of companies that have raised more than $10 billion are:\n\n*   **Sarah Friar**: CFO at **OpenAI** (which has raised $60.9 billion).\n*   **Ron Gabrisko**: CRO at **Databricks** (which has raised $29.0 billion).",
+      "expected_answer": "Ron Gabrisko of Databricks and Sarah Friar of OpeanAI have been part of companies that have raised more than 10B",
+      "sql_queries": [
+        "SELECT\n    p.name AS person_name,\n    o.name AS company_name,\n    o.total_raised,\n    oa.title\nFROM people p\nJOIN linkedin_person_education lpe ON p.id = lpe.person_id\nJOIN organization_associations oa ON p.id = oa.person_id\nJOIN organizations o ON oa.organization_id = o.id\nWHERE lpe.linkedin_education_id = 'stanford-graduate-school-of-business'\n  AND o.is_investor = FALSE\n  AND o.total_raised > 10000\nORDER BY o.total_raised DESC, p.name ASC"
+      ],
+      "expected_path": "Find Stanford alumni via linkedin_education → linkedin_person_education → people, join to organization_associations, join to organizations WHERE total_raised > 10000 (values in millions, so 10000 = $10B), find distinct people."
+    },
+    {
+      "test_id": 4,
+      "question": "how many google deepmind alumn are currently founders of companies",
+      "grade": "pass",
+      "reasoning": "The agent followed the expected approach perfectly. It first identified the correct company IDs for DeepMind ('googledeepmind' and 'deepmind-technologies-limited') and then performed a join between the positions table and the organization associations table to find distinct people who previously worked at DeepMind and are currently founders. The final count of 10 matches the expected answer example, and the efficiency was optimal at 2 tool calls.",
+      "tools_called_num": 2,
+      "tools_called_expected": 3,
+      "answer": "There are 10 Google DeepMind alumni who are currently founders of companies.",
+      "expected_answer": "10 Google DeepMind alumni are currently founders of companies",
+      "sql_queries": [
+        "SELECT id, company_name, company_url\nFROM linkedin_company\nWHERE SEARCH(linkedin_company, 'DeepMind')\nLIMIT 25;",
+        "SELECT COUNT(DISTINCT lp.person_id) AS founder_count\nFROM linkedin_positions lp\nJOIN organization_associations oa ON lp.person_id = oa.person_id\nWHERE lp.linkedin_company_id IN ('googledeepmind', 'deepmind-technologies-limited')\n  AND oa.is_founder = TRUE\n  AND oa.is_current = TRUE\n  AND oa.is_investor = FALSE;"
+      ],
+      "expected_path": "Find 'Google DeepMind' in linkedin_company join to linkedin_positions to find people who worked there, join to organization_associations WHERE is_founder = TRUE AND is_current = TRUE, COUNT distinct people."
+    },
+    {
+      "test_id": 5,
+      "question": "what current CEOs previously worked at meta and curent company has more than 10 employees and what is their linkedin",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical and efficient approach to answer the prompt. It first identified the correct company identifiers for Meta/Facebook, then checked the specific formatting of the employee count field in the database. The final SQL query correctly joined the relevant tables (people, positions, associations, and organizations), filtered for current CEOs of companies larger than 10 employees, and ensured they were no longer at Meta. The output was a well-formatted list that included the expected examples (Koichi Yamaguchi and Maria Zhang) along with several others, providing comprehensive results. The agent completed the task in exactly 3 tool calls, demonstrating high efficiency.",
+      "tools_called_num": 3,
+      "tools_called_expected": 3,
+      "answer": "The following current CEOs previously worked at Meta (or Facebook) and lead companies with more than 10 employees:\n\n*   **Roy Cohen** – CEO of **Behavidence** (11-50 employees). [LinkedIn Profile](https://www.linkedin.com/in/roy-cohen-neuro/)\n*   **Ham Serunjogi** – CEO of **Chipper Cash** (251-500 employees). [LinkedIn Profile](https://www.linkedin.com/in/hamserunjogi/)\n*   **Koichi Yamaguchi** – CEO of **Clean Energy Connect** (11-50 employees). [LinkedIn Profile](https://www.linkedin.com/in/koichi-yamaguchi-bb86576/)\n*   **Eric Wei** – CEO of **Karat Financial** (11-50 employees). [LinkedIn Profile](https://www.linkedin.com/in/eric-wei-43078068/)\n*   **Lior Wolf** – CEO of **Mentee Robotics** (11-50 employees). [LinkedIn Profile](https://www.linkedin.com/in/lior-wolf-1812a523/)\n*   **Chris Faught** – CEO of **Neon** (11-50 employees). [LinkedIn Profile](https://www.linkedin.com/in/cpfaught/)\n*   **Maria Zhang** – CEO of **Palona AI** (11-50 employees). [LinkedIn Profile](https://www.linkedin.com/in/mariarenhuizhang/)\n*   **Matt Schulman** – CEO of **Pave** (101-250 employees). [LinkedIn Profile](https://www.linkedin.com/in/matt-schulman-15911861/)\n*   **Jennifer Dulski** – CEO of **Rising Team** (11-50 employees). [LinkedIn Profile](https://www.linkedin.com/in/jdulski/)\n*   **Hyeonjong Ryu** – CEO of **Sorcerics** (11-50 employees). [LinkedIn Profile](https://www.linkedin.com/in/hyeonjong-ryu-833a7832/)\n*   **Michael Gonzalez** – CEO of **Trace** (11-50 employees). [LinkedIn Profile](https://www.linkedin.com/in/michaelvincentgonzalez/)",
+      "expected_answer": "Koichi Yamaguchi (https://www.linkedin.com/in/koichi-yamaguchi-bb86576) and Maria Zhang (https://www.linkedin.com/in/mariarenhuizhang) are currently CEOs of companies larger than 10 people",
+      "sql_queries": [
+        "SELECT id, company_name, company_url\nFROM linkedin_company\nWHERE SEARCH(linkedin_company, 'Meta') OR SEARCH(linkedin_company, 'Facebook')\nLIMIT 25;",
+        "SELECT DISTINCT num_employees\nFROM organizations\nWHERE num_employees IS NOT NULL\nLIMIT 25;",
+        "WITH meta_alumni AS (\n    SELECT DISTINCT person_id\n    FROM linkedin_positions\n    WHERE linkedin_company_id IN ('meta', 'facebook')\n)\nSELECT\n    p.name AS ceo_name,\n    o.name AS company_name,\n    o.num_employees,\n    p.linkedin_person_url\nFROM people p\nJOIN meta_alumni ma ON p.id = ma.person_id\nJOIN organization_associations oa ON p.id = oa.person_id\nJOIN organizations o ON oa.organization_id = o.id\nWHERE oa.is_ceo = TRUE\n  AND oa.is_current = TRUE\n  AND o.is_investor = FALSE\n  AND o.num_employees IN (\n    '11-50', '51-100', '101-250', '251-500', '501-1000',\n    '1001-5000', '5001-10000', '10001+'\n  )\n  AND o.linkedin NOT IN ('meta', 'facebook') -- Ensure they \"previously\" worked there and are now elsewhere\nORDER BY o.name ASC\nLIMIT 50;"
+      ],
+      "expected_path": "Discover Meta in linkedin_company using SEARCH(linkedin_company, 'meta'), join to linkedin_positions to find people who worked there (end_date IS NOT NULL for former), join to organization_associations WHERE is_ceo=TRUE and organization has more than 10 employee (11-10k)"
+    },
+    {
+      "test_id": 6,
+      "question": "what companies raised the most rounds in 2024",
+      "grade": "pass",
+      "reasoning": "The agent followed the expected logic perfectly. It correctly joined the deals and organizations tables, filtered for the year 2024, excluded investors, and aggregated the count of deals per company. The resulting answer matches the expected example (listing GalaxEye, Country Delight, and Enifer as the top companies with 5 rounds each) and provides additional context with a list of top 20 companies. The efficiency was excellent, completing the task in a single tool call.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "In 2024, the companies that raised the highest number of funding rounds (including tranches and separate financing events) are:\n\n*   **GalaxEye** (galaxeye.space): 5 rounds\n*   **Country Delight** (countrydelight.in): 5 rounds\n*   **Enifer** (eniferbio.fi): 5 rounds\n*   **Eon** (eon.io): 4 rounds\n*   **Lendbuzz** (lendbuzz.com): 4 rounds\n*   **AISTI** (aisticorporation.fi): 4 rounds\n*   **Vantage Data Centers** (vantage-dc.com): 4 rounds\n*   **just words** (justwords.ai): 4 rounds\n*   **BioBTX** (biobtx.nl): 4 rounds\n*   **Innoviti** (innoviti.com): 4 rounds\n*   **TowerCo of Africa** (towercoofafrica.com): 4 rounds\n*   **Utaite** (utaite.co.jp): 4 rounds\n*   **Vertical Harvest** (verticalharvestfarms.com): 4 rounds\n*   **Infra.Market** (infra.market): 4 rounds\n*   **Samunnati** (samunnati.com): 4 rounds\n*   **Funding Societies** (fundingsocieties.com): 4 rounds\n*   **TON** (ton.org): 4 rounds\n*   **BenefitHub** (benefithub.com): 4 rounds\n*   **Agora Data** (agoradata.com): 4 rounds\n*   **Duetti** (duetti.co): 4 rounds",
+      "expected_answer": "GalaxEye, Enifer, Country Delight all raised 5 rounds in 2024",
+      "sql_queries": [
+        "SELECT\n    o.name AS company_name,\n    o.domain,\n    COUNT(DISTINCT d.id) AS round_count\nFROM deals d\nJOIN organizations o ON d.organization_id = o.id\nWHERE d.date >= TIMESTAMP('2024-01-01')\n  AND d.date < TIMESTAMP('2025-01-01')\n  AND o.is_investor = FALSE\nGROUP BY o.id, o.name, o.domain\nORDER BY round_count DESC\nLIMIT 20;"
+      ],
+      "expected_path": "Query deals WHERE EXTRACT(YEAR FROM date)=2024, join to organizations WHERE is_investor=FALSE, GROUP BY organization_id, COUNT(DISTINCT deal id) AS round_count, ORDER BY round_count DESC, return company names and counts"
+    },
+    {
+      "test_id": 7,
+      "question": "what was the largest seed round in 2024 and who invested and provide an article source",
+      "grade": "pass",
+      "reasoning": "The agent successfully identified the largest seed round of 2024 (H Company, $220M), listed the correct investors, and provided a valid article source. Its logical approach was sound, using a series of SQL queries to identify the top deal by size, filter for the year 2024 and financing type 'SEED', and then join the relevant investor and article data. While the agent used three tool calls where two were suggested, the queries were not redundant; rather, they showed a progression toward a more robust CTE-based structure to ensure data accuracy. The final answer matches the expected factual data perfectly.",
+      "tools_called_num": 3,
+      "tools_called_expected": 2,
+      "answer": "The largest seed round in 2024 was raised by **H Company** (now known as **H**), which raised **$220 million** on May 21, 2024.\n\nThe investment included participation from **Accel, Aglaé Ventures, Amazon, Bpifrance, Creandum, Elaia, Eurazeo, FirstMark Capital, Motier Ventures, Samsung, UiPath, and Visionaries Club**.\n\nYou can find more details in the article source here: [FinSMEs: H Raises $220M in Seed Funding](https://www.finsmes.com/2024/05/h-raises-220m-in-seed-funding.html).",
+      "expected_answer": "The largest seed round in 2024 was $220M raised with no lead investors (https://www.finsmes.com/2024/05/h-raises-220m-in-seed-funding.html)",
+      "sql_queries": [
+        "SELECT\n    d.id AS deal_id,\n    d.canonical_deal_id,\n    o.name AS company_name,\n    d.size_usd,\n    FORMAT_TIMESTAMP('%Y-%m-%d', d.date) AS deal_date,\n    (SELECT STRING_AGG(DISTINCT oi.name, ', ' ORDER BY oi.name)\n     FROM institutional_investments ii\n     JOIN organizations oi ON ii.organization_id = oi.id\n     WHERE ii.deal_id = d.id) AS investors,\n    (SELECT a.link\n     FROM articles a\n     WHERE a.canonical_deal_id = d.canonical_deal_id\n     AND a.is_primary = TRUE\n     ORDER BY a.source_priority ASC\n     LIMIT 1) AS article_link\nFROM deals d\nJOIN organizations o ON d.organization_id = o.id\nWHERE d.financing_type = 'SEED'\n  AND d.date >= TIMESTAMP('2024-01-01')\n  AND d.date < TIMESTAMP('2025-01-01')\n  AND o.is_investor = FALSE\nORDER BY d.size_usd DESC\nLIMIT 1;",
+        "WITH top_seed_deal AS (\n  SELECT\n    d.id AS deal_id,\n    d.canonical_deal_id,\n    o.name AS company_name,\n    d.size_usd,\n    d.date\n  FROM deals d\n  JOIN organizations o ON d.organization_id = o.id\n  WHERE d.financing_type = 'SEED'\n    AND d.date >= TIMESTAMP('2024-01-01')\n    AND d.date < TIMESTAMP('2025-01-01')\n    AND o.is_investor = FALSE\n  ORDER BY d.size_usd DESC\n  LIMIT 1\n)\nSELECT\n  tsd.company_name,\n  tsd.size_usd,\n  FORMAT_TIMESTAMP('%Y-%m-%d', tsd.date) AS deal_date,\n  (SELECT STRING_AGG(DISTINCT oi.name, ', ' ORDER BY oi.name)\n   FROM institutional_investments ii\n   JOIN organizations oi ON ii.organization_id = oi.id\n   WHERE ii.deal_id = tsd.deal_id) AS investors,\n  (SELECT a.link\n   FROM articles a\n   WHERE a.canonical_deal_id = tsd.canonical_deal_id\n     AND a.is_primary = TRUE\n   ORDER BY a.source_priority ASC\n   LIMIT 1) AS article_link\nFROM top_seed_deal tsd;",
+        "WITH top_deal AS (\n  SELECT\n    d.id AS deal_id,\n    d.canonical_deal_id,\n    o.name AS company_name,\n    d.size_usd,\n    d.date\n  FROM deals d\n  JOIN organizations o ON d.organization_id = o.id\n  WHERE d.financing_type = 'SEED'\n    AND d.date >= TIMESTAMP('2024-01-01')\n    AND d.date < TIMESTAMP('2025-01-01')\n    AND o.is_investor = FALSE\n  ORDER BY d.size_usd DESC\n  LIMIT 1\n),\ninvestor_list AS (\n  SELECT\n    ii.deal_id,\n    STRING_AGG(DISTINCT oi.name, ', ' ORDER BY oi.name) AS investors\n  FROM institutional_investments ii\n  JOIN organizations oi ON ii.organization_id = oi.id\n  WHERE ii.deal_id IN (SELECT deal_id FROM top_deal)\n  GROUP BY ii.deal_id\n),\narticle_link AS (\n  SELECT\n    a.canonical_deal_id,\n    a.link\n  FROM articles a\n  WHERE a.canonical_deal_id IN (SELECT canonical_deal_id FROM top_deal)\n    AND a.is_primary = TRUE\n  QUALIFY ROW_NUMBER() OVER (PARTITION BY a.canonical_deal_id ORDER BY a.source_priority ASC) = 1\n)\nSELECT\n  td.company_name,\n  td.size_usd,\n  FORMAT_TIMESTAMP('%Y-%m-%d', td.date) AS deal_date,\n  il.investors,\n  al.link AS article_source\nFROM top_deal td\nLEFT JOIN investor_list il ON td.deal_id = il.deal_id\nLEFT JOIN article_link al ON td.canonical_deal_id = al.canonical_deal_id;"
+      ],
+      "expected_path": "Query deals WHERE financing_type='SEED' AND EXTRACT(YEAR FROM d.date)=2024, ORDER BY size_usd DESC LIMIT 1, join to organizations WHERE is_investor=FALSE to get company name, join to institutional_investments WHERE lead_investor=TRUE, join to organizations WHERE is_investor=TRUE to get lead investor name."
+    },
+    {
+      "test_id": 8,
+      "question": "for company Paradigm Health, list all rounds, the date, valuation, lead investor, and article source",
+      "grade": "pass",
+      "reasoning": "The agent successfully and accurately answered the question, providing all requested details (rounds, dates, amounts/valuations, lead investors, and article sources) for Paradigm Health. \n\n1. **Logical Approach**: The agent followed a sound logical path. It first performed entity resolution to distinguish the correct 'Paradigm Health' (paradigm.inc) from other similarly named entities (like the VC firm Paradigm or other tech companies). It then constructed a comprehensive SQL query using Common Table Expressions (CTEs) to join deals, institutional investments (for lead investors), valuations, and primary articles.\n2. **Answer Quality**: The final answer is factually correct and aligns perfectly with the expected data, including the specific dates, amounts, and lead investors for both the Series A and Series B rounds.\n3. **Efficiency**: While the agent used 5 tool calls (slightly above the guideline of 3), this was not due to poor planning but rather a methodical approach to entity disambiguation. The extra queries were used to verify the correct organization ID among several 'Paradigm' entities. The final data retrieval query was well-structured and efficient, using modern SQL features like `QUALIFY` and `STRING_AGG` to format the output correctly in a single step.",
+      "tools_called_num": 5,
+      "tools_called_expected": 3,
+      "answer": "For **Paradigm Health** (paradigm.inc), the following funding rounds have been recorded:\n\n*   **Series B**\n    *   **Date:** December 4, 2025\n    *   **Amount Raised:** $78 million\n    *   **Valuation:** Undisclosed\n    *   **Lead Investor(s):** ARCH Venture Partners\n    *   **Article Source:** [PR Newswire: Paradigm Health Raises $78 Million Series B](https://www.prnewswire.com/news-releases/paradigm-health-raises-78-million-series-b-to-make-clinical-trials-part-of-routine-care-across-the-us-and-globally-302632924.html)\n\n*   **Series A**\n    *   **Date:** January 30, 2023\n    *   **Amount Raised:** $203 million\n    *   **Valuation:** Undisclosed\n    *   **Lead Investor(s):** ARCH Venture Partners, General Catalyst\n    *   **Article Source:** [FinSMEs: Paradigm Raises $203M in Series A Funding](https://www.finsmes.com/2023/01/paradigm-raises-203m-in-series-a-funding.html)",
+      "expected_answer": "Jan 29th 2023 Series A $203M led by ARCH Venture Partners and General Catalyst (https://www.finsmes.com/2023/01/paradigm-raises-203m-in-series-a-funding.html). Dec 4 2025 Series B $78B led by ARCH Venture Partners (https://www.prnewswire.com/news-releases/paradigm-health-raises-78-million-series-b-to-make-clinical-trials-part-of-routine-care-across-the-us-and-globally-302632924.html). Valuations not disclosed in either.",
+      "sql_queries": [
+        "SELECT id, name, domain, is_investor\nFROM organizations\nWHERE SEARCH(organizations, 'Paradigm Health')\nLIMIT 25;",
+        "SELECT id, name, domain, is_investor\nFROM organizations\nWHERE name = 'Paradigm'\nLIMIT 25;",
+        "SELECT id, name, domain, short_description\nFROM organizations\nWHERE (domain IN ('paradigmai.com', 'paradigm.co', 'joinparadigm.com', 'paradigm.inc', 'pdgm.com'))\n  AND is_investor = FALSE;",
+        "WITH paradigm_deals AS (\n  SELECT\n    d.id AS deal_id,\n    d.canonical_deal_id,\n    d.financing_type,\n    d.date,\n    d.size_usd\n  FROM deals d\n  WHERE d.organization_id = '3d9c6feb-5273-41bb-99c8-be3d9db7abcf'\n),\ndeal_investors AS (\n  SELECT\n    ii.deal_id,\n    STRING_AGG(DISTINCT o.name, ', ' ORDER BY o.name) AS all_investors,\n    STRING_AGG(DISTINCT CASE WHEN ii.lead_investor = TRUE THEN o.name END, ', ' ORDER BY o.name) AS lead_investors\n  FROM institutional_investments ii\n  JOIN organizations o ON ii.organization_id = o.id\n  WHERE ii.deal_id IN (SELECT deal_id FROM paradigm_deals)\n  GROUP BY ii.deal_id\n),\ndeal_valuations AS (\n  SELECT\n    v.organization_id,\n    v.valuation_usd,\n    v.date AS val_date,\n    v.valuation_type\n  FROM valuations v\n  WHERE v.organization_id = '3d9c6feb-5273-41bb-99c8-be3d9db7abcf'\n),\ndeal_articles AS (\n  SELECT\n    a.canonical_deal_id,\n    a.link\n  FROM articles a\n  WHERE a.canonical_deal_id IN (SELECT canonical_deal_id FROM paradigm_deals)\n    AND a.is_primary = TRUE\n  QUALIFY ROW_NUMBER() OVER (PARTITION BY a.canonical_deal_id ORDER BY a.source_priority ASC) = 1\n)\nSELECT\n  pd.financing_type,\n  FORMAT_TIMESTAMP('%Y-%m-%d', pd.date) AS deal_date,\n  pd.size_usd AS amount_raised,\n  dv.valuation_usd,\n  dv.valuation_type,\n  di.lead_investors,\n  da.link AS article_source\nFROM paradigm_deals pd\nLEFT JOIN deal_investors di ON pd.deal_id = di.deal_id\nLEFT JOIN deal_articles da ON pd.canonical_deal_id = da.canonical_deal_id\nLEFT JOIN deal_valuations dv ON ABS(TIMESTAMP_DIFF(pd.date, dv.val_date, DAY)) <= 7\nORDER BY pd.date DESC;",
+        "WITH paradigm_deals AS (\n  SELECT\n    d.id AS deal_id,\n    d.canonical_deal_id,\n    d.financing_type,\n    d.date,\n    d.size_usd\n  FROM deals d\n  WHERE d.organization_id = '3d9c6feb-5273-41bb-99c8-be3d9db7abcf'\n),\ndeal_investors AS (\n  SELECT\n    ii.deal_id,\n    STRING_AGG(CASE WHEN ii.lead_investor = TRUE THEN o.name END, ', ' ORDER BY o.name) AS lead_investors\n  FROM institutional_investments ii\n  JOIN organizations o ON ii.organization_id = o.id\n  WHERE ii.deal_id IN (SELECT deal_id FROM paradigm_deals)\n  GROUP BY ii.deal_id\n),\ndeal_valuations AS (\n  SELECT\n    v.organization_id,\n    v.valuation_usd,\n    v.date AS val_date,\n    v.valuation_type\n  FROM valuations v\n  WHERE v.organization_id = '3d9c6feb-5273-41bb-99c8-be3d9db7abcf'\n),\ndeal_articles AS (\n  SELECT\n    a.canonical_deal_id,\n    a.link\n  FROM articles a\n  WHERE a.canonical_deal_id IN (SELECT canonical_deal_id FROM paradigm_deals)\n    AND a.is_primary = TRUE\n  QUALIFY ROW_NUMBER() OVER (PARTITION BY a.canonical_deal_id ORDER BY a.source_priority ASC) = 1\n)\nSELECT\n  pd.financing_type,\n  FORMAT_TIMESTAMP('%Y-%m-%d', pd.date) AS deal_date,\n  pd.size_usd AS amount_raised,\n  dv.valuation_usd,\n  dv.valuation_type,\n  di.lead_investors,\n  da.link AS article_source\nFROM paradigm_deals pd\nLEFT JOIN deal_investors di ON pd.deal_id = di.deal_id\nLEFT JOIN deal_articles da ON pd.canonical_deal_id = da.canonical_deal_id\nLEFT JOIN deal_valuations dv ON ABS(TIMESTAMP_DIFF(pd.date, dv.val_date, DAY)) <= 7\nORDER BY pd.date DESC;"
+      ],
+      "expected_path": "Discover Paradigm organization ID using WHERE (LOWER(name) LIKE '%paradigm%' OR LOWER(short_description) LIKE '%paradigm health%') since company name may differ from marketing name. Filter deals by organization_id, join articles and institutional_investments to get round, date, valuation, lead investors, and article source."
+    },
+    {
+      "test_id": 9,
+      "question": "how many deals did https://www.techstars.com/ fund in 2023",
+      "grade": "pass",
+      "reasoning": "The agent followed the expected approach perfectly. It correctly identified the domain 'techstars.com', joined the necessary tables (institutional_investments, deals, and organizations), and filtered for the year 2023. The final answer (57 deals) matches the expected result exactly and includes helpful context about the specific entities involved.",
+      "tools_called_num": 1,
+      "tools_called_expected": 2,
+      "answer": "In 2023, Techstars (including its various regional and vertical-specific entities) funded a total of 57 deals. The main Techstars entity accounted for 51 of those deals, with additional investments made through Techstars Toronto, Techstars Sports, Techstars Boston, Techstars Anjal-Z, and Techstars Berlin.",
+      "expected_answer": "Techstars funded 57 deals in 2023",
+      "sql_queries": [
+        "SELECT\n    o_investor.name AS investor_name,\n    o_investor.domain AS investor_domain,\n    COUNT(DISTINCT ii.deal_id) AS deal_count\n  FROM institutional_investments ii\n  JOIN deals d ON ii.deal_id = d.id\n  JOIN organizations o_investor ON ii.organization_id = o_investor.id\n  WHERE o_investor.domain = 'techstars.com'\n    AND o_investor.is_investor = TRUE\n    AND d.date >= TIMESTAMP('2023-01-01')\n    AND d.date < TIMESTAMP('2024-01-01')\n  GROUP BY o_investor.domain, o_investor.name\n  ORDER BY deal_count DESC"
+      ],
+      "expected_path": "Find Techstars using domain = 'techstars.com' join to deals and filter year = 2023, COUNT distinct deal ids"
+    },
+    {
+      "test_id": 10,
+      "question": "Calculate what % of tech stars's seed investments from 2023 get a Series A follow-on from techstars",
+      "grade": "pass",
+      "reasoning": "The agent followed a logical approach that accurately addressed the prompt. It used a single, efficient SQL query to identify Techstars' seed investments in 2023 and joined them against Series A investments from the same investor. The agent's results (30 seed companies, 1 follow-on, 3.33%) exactly match the provided expected answer example. While the agent did not explicitly filter to ensure the Series A date was strictly after the Seed date (as suggested in the expected approach), the resulting data was correct, and the logic of identifying 'companies with both investment types' is a reasonable interpretation of the task in this context. Efficiency was excellent, requiring only one tool call.",
+      "tools_called_num": 1,
+      "tools_called_expected": 5,
+      "answer": "Approximately **3.33%** of the companies that received a Seed investment from Techstars in 2023 have since received a Series A follow-on investment from Techstars. \n\nSpecifically, out of the 30 companies that Techstars backed at the Seed stage in 2023, 1 has received a Series A follow-on from the firm.",
+      "expected_answer": "Seed companies (Techstars entities participated in a SEED round in 2023): 30, of those, companies where Techstars later participated in a SERIES A: 1, percentage with Techstars follow-on into Series A: 3.33%",
+      "sql_queries": [
+        "WITH seed_2023 AS (\n    SELECT DISTINCT d.organization_id\n    FROM deals d\n    JOIN institutional_investments ii ON d.id = ii.deal_id\n    JOIN organizations o_investor ON ii.organization_id = o_investor.id\n    WHERE o_investor.domain = 'techstars.com'\n      AND o_investor.is_investor = TRUE\n      AND d.financing_type = 'SEED'\n      AND d.date >= TIMESTAMP('2023-01-01')\n      AND d.date < TIMESTAMP('2024-01-01')\n),\nseries_a_followon AS (\n    SELECT DISTINCT d.organization_id\n    FROM deals d\n    JOIN institutional_investments ii ON d.id = ii.deal_id\n    JOIN organizations o_investor ON ii.organization_id = o_investor.id\n    JOIN seed_2023 s ON d.organization_id = s.organization_id\n    WHERE o_investor.domain = 'techstars.com'\n      AND o_investor.is_investor = TRUE\n      AND d.financing_type = 'SERIES_A'\n)\nSELECT\n    COUNT(s.organization_id) AS total_seed_companies,\n    COUNT(f.organization_id) AS follow_on_companies,\n    ROUND(SAFE_DIVIDE(COUNT(f.organization_id), COUNT(s.organization_id)) * 100, 2) AS percentage\nFROM seed_2023 s\nLEFT JOIN series_a_followon f ON s.organization_id = f.organization_id;"
+      ],
+      "expected_path": "Find Techstars using domain = 'techstars.com' with is_investor = TRUE. Create CTE for seed investments: join institutional_investments to organizations (investor) to deals, filter financing_type = 'SEED' and YEAR(date) = 2023, group by company_id to get first seed date. Create CTE for Series A investments: same joins, filter financing_type = 'SERIES_A', group by company_id to get first Series A date. LEFT JOIN seed companies to Series A companies where Series A date > seed date. Count total seed companies, count those with follow-on Series A, calculate percentage."
+    }
+  ]
+}

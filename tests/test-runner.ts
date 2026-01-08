@@ -195,7 +195,8 @@ export async function runAllTests(
   const agent = new AIAgent({
     mcpServerUrl: config.mcpServerUrl,
     model: config.agentModel,
-    verbose: config.verbose,
+    verbose: true,
+    maxSteps: 15
   });
 
   try {
@@ -314,8 +315,8 @@ async function main() {
   const suitesToRun: Array<'easy' | 'medium' | 'hard'> =
     suite === 'all' ? ['easy', 'medium', 'hard'] : [suite as 'easy' | 'medium' | 'hard'];
 
-  // Load system prompt from centralized configuration
-  const systemPrompt = getPrompt('vc_analyst');
+  // Load system prompt from centralized configuration with test mode suffix
+  const systemPrompt = getPrompt('vc_analyst') + '\n' + getPrompt('test_mode_suffix');
 
   // Print header
   console.log('╔════════════════════════════════════════════════════════════╗');
@@ -327,6 +328,7 @@ async function main() {
   // Run tests for each suite
   let allResults: UnifiedTestResult[] = [];
   let totalTestCount = 0;
+  const overallStartTime = Date.now();
 
   for (const currentSuite of suitesToRun) {
     // Load test cases for this suite
@@ -345,6 +347,7 @@ async function main() {
     console.log(`📊 Running ${testCases.length} test(s) from ${currentSuite} suite\n`);
 
     // Run tests for this suite
+    const suiteStartTime = Date.now();
     const suiteResults = await runAllTests(testCases, {
       mcpServerUrl,
       agentModel,
@@ -352,16 +355,20 @@ async function main() {
       systemPrompt,
       verbose,
     });
+    const suiteDuration = Date.now() - suiteStartTime;
 
-    // Accumulate results
+    // Save results for this suite immediately (each suite gets its own file)
+    await saveResults(suiteResults, currentSuite, modelName, suiteDuration);
+
+    // Accumulate results for combined summary
     allResults = allResults.concat(suiteResults);
   }
 
+  const overallDuration = Date.now() - overallStartTime;
   console.log(`\n✅ Completed ${totalTestCount} total test(s)\n`);
 
-  // Save and display results with suite and model info
-  const output = buildUnifiedResults(allResults);
-  await saveResults(allResults, suite, modelName);
+  // Display combined summary
+  const output = buildUnifiedResults(allResults, overallDuration);
   printSummary(output);
 
   // Exit with error code if any tests failed
