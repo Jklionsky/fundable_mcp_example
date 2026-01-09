@@ -7,6 +7,7 @@ config();
 
 async function testConnection() {
   const serverUrl = process.env.MCP_SERVER_URL;
+  const apiKey = process.env.MCP_API_KEY; // Optional: API key for programmatic access
 
   if (!serverUrl) {
     console.error("❌ MCP_SERVER_URL not set in .env file");
@@ -14,17 +15,29 @@ async function testConnection() {
   }
 
   console.log("🔄 Testing MCP connection...\n");
-  console.log(`Server URL: ${serverUrl}\n`);
+  console.log(`Server URL: ${serverUrl}`);
+  if (apiKey) {
+    console.log(`Auth: API Key`);
+  } else {
+    console.log(`Auth: OAuth (may open browser)`);
+  }
+  console.log();
 
   let client;
 
   try {
+    // Build mcp-remote args - optionally include API key header
+    const mcpArgs = ["mcp-remote", serverUrl];
+    if (apiKey) {
+      mcpArgs.push("--header", `Authorization: Bearer ${apiKey}`);
+    }
+
     // Connect to the server using AI SDK MCP client
     console.log("Connecting to MCP server...");
     client = await createMCPClient({
       transport: new StdioClientTransport({
         command: "npx",
-        args: ["mcp-remote", serverUrl],
+        args: mcpArgs,
       }),
     });
 

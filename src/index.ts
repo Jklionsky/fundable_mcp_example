@@ -15,6 +15,7 @@ async function main() {
   const cliOptions = parseArgs();
   // Validate environment variables
   const mcpServerUrl = process.env.MCP_SERVER_URL;
+  const mcpApiKey = process.env.MCP_API_KEY; // Optional: API key for programmatic access
 
   if (!mcpServerUrl) {
     console.error("❌ MCP_SERVER_URL not set in .env file");
@@ -38,6 +39,7 @@ async function main() {
   // Initialize agent
   const agent = new AIAgent({
     mcpServerUrl,
+    apiKey: mcpApiKey, // Optional: bypasses OAuth when set
     model,
     maxSteps: 10,
     verbose: cliOptions.verbose

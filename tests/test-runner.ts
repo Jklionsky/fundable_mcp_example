@@ -87,6 +87,7 @@ function processAgentTrace(
  */
 export interface TestConfig {
   mcpServerUrl: string;
+  mcpApiKey?: string;             // Optional API key for MCP auth (bypasses OAuth)
   agentModel: LanguageModel;      // Model for the agent being tested
   evaluatorModel: LanguageModel;  // Model for LLM-based evaluation
   systemPrompt: string;
@@ -194,16 +195,17 @@ export async function runAllTests(
   // Verbose flag is controlled by CLI argument (default: false)
   const agent = new AIAgent({
     mcpServerUrl: config.mcpServerUrl,
+    apiKey: config.mcpApiKey,
     model: config.agentModel,
     verbose: true,
-    maxSteps: 15
   });
 
   try {
     // Initialize agent with system prompt once
+    // maxSteps: 15 allows complex queries (4-6 tool calls) plus response generation
     await agent.initialize({
       systemPrompt: config.systemPrompt,
-      maxSteps: 10
+      maxSteps: 15
     });
 
     for (let i = 0; i < testCases.length; i++) {
@@ -288,6 +290,9 @@ async function main() {
     process.exit(1);
   }
 
+  // Optional API key for authentication (bypasses OAuth)
+  const mcpApiKey = process.env.MCP_API_KEY;
+
   // Get the AI model using the same logic as the main app
   // Provider can be specified via --provider flag, or auto-detected
   const { model, modelName } = getModel(provider);
@@ -323,6 +328,7 @@ async function main() {
   console.log('║          🧪 AI Agent Evaluation Framework 🧪               ║');
   console.log('╚════════════════════════════════════════════════════════════╝');
   console.log(`\n📡 MCP Server: ${mcpServerUrl}`);
+  console.log(`🔑 Auth: ${mcpApiKey ? 'API Key' : 'OAuth'}`);
   console.log(`🧠 Model: ${modelName}`);
 
   // Run tests for each suite
@@ -350,6 +356,7 @@ async function main() {
     const suiteStartTime = Date.now();
     const suiteResults = await runAllTests(testCases, {
       mcpServerUrl,
+      mcpApiKey,
       agentModel,
       evaluatorModel,
       systemPrompt,

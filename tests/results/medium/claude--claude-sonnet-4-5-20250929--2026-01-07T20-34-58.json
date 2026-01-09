@@ -33,7 +33,7 @@
       "tools_called_num": 3,
       "tools_called_expected": 3,
       "answer": "539 founders went to Stanford Business School (Stanford Graduate School of Business).",
-      "expected_answer": "539 Stanford undergrads are founders",
+      "expected_answer": "539 Stanford grads are founders of companies including investors who founder their firms there is 749",
       "sql_queries": [
         "\nSELECT id, education_name, education_url\nFROM linkedin_education\nWHERE SEARCH(linkedin_education, 'stanford business')\nLIMIT 25\n",
         "\nSELECT COUNT(DISTINCT p.id) AS founder_count\nFROM people p\nJOIN linkedin_person_education lpe ON p.id = lpe.person_id\nJOIN organization_associations oa ON p.id = oa.person_id\nWHERE lpe.linkedin_education_id = 'stanford-graduate-school-of-business'\n  AND oa.is_founder = TRUE\n  AND oa.is_investor = FALSE\n"

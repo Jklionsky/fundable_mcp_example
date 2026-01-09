@@ -15,6 +15,7 @@ export class AIAgent {
   private agent: Agent<any> | null = null;
   private model: LanguageModel;
   private mcpServerUrl: string;
+  private apiKey: string | undefined; // Optional API key for auth (bypasses OAuth)
   private messages: CoreMessage[] = []; // Store conversation history
   private trace: Array<Array<{toolName: string, input: any, output: any, stepNumber: number}>> = []; // Store tool call traces
   private verbose: boolean;
@@ -23,11 +24,13 @@ export class AIAgent {
   constructor(config: {
     mcpServerUrl: string;
     model: LanguageModel;
+    apiKey?: string; // Optional: API key for programmatic access (bypasses OAuth browser flow)
     systemPrompt?: string;
     maxSteps?: number;
     verbose?: boolean;
   }) {
     this.mcpServerUrl = config.mcpServerUrl;
+    this.apiKey = config.apiKey;
     this.model = config.model;
     this.verbose = config.verbose ?? false; // Default to true for backward compatibility
     this.provider = detectProvider(config.model);
@@ -42,14 +45,24 @@ export class AIAgent {
   }): Promise<void> {
     console.log("🤖 Initializing AI Agent...\n");
     console.log(`📡 Connecting to MCP server at ${this.mcpServerUrl}...`);
+    if (this.apiKey) {
+      console.log(`🔑 Using API key authentication`);
+    } else {
+      console.log(`🔐 Using OAuth authentication (may open browser)`);
+    }
+
+    // Build mcp-remote args - optionally include API key header
+    const mcpArgs = ["mcp-remote", this.mcpServerUrl];
+    if (this.apiKey) {
+      mcpArgs.push("--header", `Authorization: Bearer ${this.apiKey}`);
+    }
 
     // Create MCP client using stdio transport with mcp-remote
-    // This allows us to connect to remote MCP servers with OAuth authentication
-    // Add  stderr: 'ignore' to remove MCP logging
+    // This allows us to connect to remote MCP servers with OAuth or API key authentication
     this.mcpClient = await createMCPClient({
       transport: new StdioClientTransport({
         command: "npx",
-        args: ["mcp-remote", this.mcpServerUrl],
+        args: mcpArgs,
       }),
     });
 

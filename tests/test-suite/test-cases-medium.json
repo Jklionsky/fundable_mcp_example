@@ -11,7 +11,7 @@
     "question": "how many founders went to Stanford Business School",
     "max_tool_calls": 3,
     "expected_path_description": "Find Stanford in linkedin_education using SEARCH(linkedin_education, 'stanford business school') OR SEARCH(linkedin_education, 'stanford'), join to linkedin_person_education, join to people, filter WHERE is_founder = TRUE via organization_associations, COUNT distinct people.",
-    "expected_answer": "539 Stanford undergrads are founders"
+    "expected_answer": "539 Stanford grads are founders of companies including investors who founder their firms there is 749"
   },
   {
     "id": 3,

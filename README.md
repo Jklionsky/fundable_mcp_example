@@ -26,10 +26,10 @@ npm install
 
 # 2. Configure environment
 cp .env.example .env
-# Edit .env with your API key
+# Edit .env with your MCP API key and AI provider key
 
-# 3. Get allowlisted (required)
-# Contact jacob@tryfundable.ai with your GitHub username
+# 3. Get an MCP API key (required)
+# Contact jacob@tryfundable.ai to request an API key
 
 # 4. Test connection
 npm run test:connection
@@ -57,8 +57,8 @@ This example uses relatively simple prompting to demonstrate MCP's core capabili
 ### Prerequisites
 
 - **Node.js 18+** required
-- **GitHub account** for authentication
-  - **Important:** Contact `jacob@tryfundable.ai` with your GitHub username to be allowlisted for MCP server access
+- **MCP API key** for Fundable server access
+  - Contact `jacob@tryfundable.ai` to request an API key
 - **API key** for at least one AI provider (OpenAI, Anthropic, or Google)
 
 ### Installation
@@ -77,10 +77,15 @@ cp .env.example .env
 Edit your `.env` file:
 
 ```bash
-# MCP Server URL
-MCP_SERVER_URL=https://fundable_mcp.jacob-57a.workers.dev/mcp
+# ===========================================
+# MCP Server Authentication (API Key - Recommended)
+# ===========================================
+MCP_SERVER_URL=https://fundable_mcp.jacob-57a.workers.dev/api-mcp
+MCP_API_KEY=fundable_mcp_your-api-key-here
 
-# AI Provider (choose one - comment out unused providers)
+# ===========================================
+# AI Provider (choose one)
+# ===========================================
 OPENAI_API_KEY=sk-your-api-key-here
 OPENAI_MODEL=gpt-5-mini  # Optional
 
@@ -89,17 +94,28 @@ OPENAI_MODEL=gpt-5-mini  # Optional
 
 # ANTHROPIC_API_KEY=sk-your-api-key-here
 # ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
+```
 
-**Performance trends from testing:**
+### Authentication Options
 
-All models see similar accuracy, but differ in speed, cost, and tool efficiency:
+| Method | Endpoint | Best For |
+|--------|----------|----------|
+| **API Key** (recommended) | `/api-mcp` | AI agents, scripts, programmatic access |
+| OAuth | `/mcp` | Browser-based tools (Claude Desktop, MCP Inspector) |
 
-- **Google Gemini Flash 3**: Fastest inference, lowest cost, as accurate as other models but least efficient with tool use
-- **OpenAI (gpt-5-mini)**: Similar cost profile to Gemini, 2x slower than Gemini, more efficient tool usage
-- **Anthropic (Claude Sonnet 4.5)**: Most efficient tool usage, similar latency to OpenAI, significantly higher cost per query
+**API Key**: Set `MCP_API_KEY` in your `.env` - no browser interaction required.
+
+**OAuth** (alternative): Remove `MCP_API_KEY` from `.env` and use `/mcp` endpoint. First connection will open a browser for GitHub login.
+
+### AI Provider Performance
+
+All models achieve similar overall accuracy, but differ in speed, cost, and tool efficiency:
+
+- **Google Gemini Flash 3**: Fastest inference, lowest cost, least efficient with tool use by a signficant margin espcially on tough questions
+- **OpenAI (gpt-5-mini)**: Similar cost to Gemini but 2x slower, more efficient tool usage
+- **Anthropic (Claude Sonnet 4.5)**: Most efficient tool usage, similar latency to OpenAI, higher cost
 
 *See `/tests/results` for sample test outputs across difficulty levels*
-```
 
 ## Running the Agent
 

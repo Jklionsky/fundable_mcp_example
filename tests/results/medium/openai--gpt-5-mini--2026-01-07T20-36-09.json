@@ -1,8 +1,8 @@
 {
   "metadata": {
     "total_tests": 10,
-    "passed": 10,
-    "failed": 0,
+    "passed": 9,
+    "failed": 1,
     "pass_rate": 100,
     "timestamp": "2026-01-07T20:36:09.359Z",
     "duration_ms": 351080,
@@ -33,7 +33,7 @@
       "tools_called_num": 2,
       "tools_called_expected": 3,
       "answer": "749 founders attended Stanford Graduate School of Business (count of distinct people with is_founder = TRUE and a Stanford GSB education record).",
-      "expected_answer": "539 Stanford undergrads are founders",
+      "expected_answer": "539 Stanford grads are founders of companies including investors who founder their firms there is 749",
       "sql_queries": [
         "SELECT id, education_name\nFROM linkedin_education\nWHERE LOWER(education_name) LIKE '%stanford%'\nORDER BY education_name\nLIMIT 100;",
         "SELECT COUNT(DISTINCT p.id) AS founders_with_stanford_gsb\nFROM organization_associations oa\nJOIN people p ON oa.person_id = p.id\nJOIN linkedin_person_education lpe ON p.id = lpe.person_id\nWHERE oa.is_founder = TRUE\n  AND lpe.linkedin_education_id = 'stanford-graduate-school-of-business';"
@@ -72,10 +72,8 @@
     {
       "test_id": 5,
       "question": "what current CEOs previously worked at meta and curent company has more than 10 employees and what is their linkedin",
-      "grade": "pass",
-      "reasoning": "Overall the agent used a logical, defensible approach that matches the expected method: it located Meta-like company rows, then queried people who have a past linkedin_positions at Meta (end_date IS NOT NULL) while currently marked as CEOs (oa.is_current = TRUE and oa.is_ceo = TRUE) and whose current organization reports >10 employees. The SQL filters (former Meta position, current CEO flag, non-investor org, employee count >10) are appropriate. Efficiency was good (2 queries, within the expected budget).\n\nMinor issues to note but not enough to fail: the second query hardcodes lp.linkedin_company_id = 'meta' rather than using the id found in the first query — this is brittle if the company id in linkedin_company is not literally 'meta'. The agent also did not show the first query results and returned only one matching CEO (Maria Zhang). That could be a correct, data-driven result, but if the database used a different company id or there are additional matches the hardcoded filter might miss them. Despite that, the approach is sound and the single returned result is presented correctly and defensibly, so the overall outcome passes.",
-      "tools_called_num": 2,
-      "tools_called_expected": 3,
+      "grade": "fail",
+      "reasoning": "Overall the agent used a logical, defensible approach that matches the expected method: it located Meta-like company rows, then queried people who have a past linkedin_positions at Meta (end_date IS NOT NULL) while currently marked as CEOs (oa.is_current = TRUE and oa.is_ceo = TRUE) and whose current organization reports >10 employees. The SQL filters (former Meta position, current CEO flag, non-investor org, employee count >10) are appropriate. Efficiency was good (2 queries, within the expected budget).\n\nIssues the second query hardcodes lp.linkedin_company_id = 'meta' rather than using the id found in the first query — this is brittle if the company id in linkedin_company is not literally 'meta'. The agent also did not show the first query results and returned only one matching CEO (Maria Zhang). Not including the other foudnder makes this a fail.",
       "answer": "Here are the current CEOs who previously worked at Meta, whose current company reports more than 10 employees:\n\n- Maria Zhang — CEO and Co-founder at Palona AI (11-50 employees) — LinkedIn: https://www.linkedin.com/in/mariarenhuizhang/",
       "expected_answer": "Koichi Yamaguchi (https://www.linkedin.com/in/koichi-yamaguchi-bb86576) and Maria Zhang (https://www.linkedin.com/in/mariarenhuizhang) are currently CEOs of companies larger than 10 people",
       "sql_queries": [
