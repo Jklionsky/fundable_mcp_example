@@ -47,8 +47,11 @@ async function main() {
 
   try {
     // Initialize with custom configuration
+     // Load system prompt from centralized configuration with test mode suffix
+    const systemPrompt = getPrompt('vc_analyst') + '\n' + getPrompt('conversation_suffix');
+
     await agent.initialize({
-      systemPrompt: getPrompt('vc_analyst')
+      systemPrompt: systemPrompt
     });
 
     // Setup readline interface

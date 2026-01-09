@@ -38,13 +38,27 @@ npm run test:connection
 npm run dev
 ```
 
+## About the Fundable MCP
+
+The Fundable MCP server exposes **5 tools** to query our BigQuery instance that holds 90k+ companies, 60k investors, and 800k people. 
+
+| Tool | Purpose | Params |
+|------|---------|--------|
+| **getDatasetContext** | **Call at session start.** Returns complete dataset documentation: table schemas (DBML), business rules (monetary values in MILLIONS), and join patterns. | None |
+| **listDatasetTables** | Quick overview of all available tables in the dataset. | None |
+| **getQueryExamples** | Access 20+ example queries by category. Useful when unsure how to structure a query or after failed attempts. | `category`: Query category (e.g., "Funding Analysis", "People & Relationships") |
+| **getTableDetails** | Get column names, types, and constraints for a specific table. | `tableName`: Table to inspect |
+| **queryVCData** ⭐ | Execute read-only BigQuery SQL. Validates queries (blocks writes, checks tables/columns), executes via BigQuery REST API, returns JSON results with stats. | `sql`: SQL query<br>`maxResults`: Result limit (optional, max 10,000) |
+
+
 ## ⚠️ Production Considerations
 
 This example uses relatively simple prompting to demonstrate MCP's core capabilities. **For production use, you should implement more advanced prompting techniques:**
 
 **Prompting Enhancements:**
 - **Return format specificity:** Add prompting for exact output schemas (JSON schema, markdown tables, structured data)
-- **Discovery questions:** Implement disambiguation flows (e.g., "a16z" could mean a16z crypto, a16z speedrun, or a16z main fund)
+- **Handling missing information:** Incorporate guardrails so agents know when to stop looking for information that isn't present in the dataset (e.g., some people only have linkedin url in dataset without previous education / employment history)
+- **Discovery questions:**  Implement disambiguation flows (e.g., "a16z" could mean a16z crypto, a16z speedrun, or a16z main fund)
 
 **Additional Considerations:**
 - Error handling for failed queries and API timeouts
@@ -210,17 +224,6 @@ mcp-ai-agent-example/
 - **`src/helpers.ts`**: CLI argument parsing and AI provider configuration
 - **`tests/test-runner.ts`**: Agent quality evaluation framework
 
-## About the Fundable MCP
-
-The Fundable MCP server exposes **5 tools** for querying venture capital data from BigQuery:
-
-| Tool | Purpose | Params |
-|------|---------|--------|
-| **getDatasetContext** | **Call at session start.** Returns complete dataset documentation: table schemas (DBML), business rules (monetary values in MILLIONS), and join patterns. | None |
-| **listDatasetTables** | Quick overview of all available tables in the dataset. | None |
-| **getQueryExamples** | Access 20+ example queries by category. Useful when unsure how to structure a query or after failed attempts. | `category`: Query category (e.g., "Funding Analysis", "People & Relationships") |
-| **getTableDetails** | Get column names, types, and constraints for a specific table. | `tableName`: Table to inspect |
-| **queryVCData** ⭐ | Execute read-only BigQuery SQL. Validates queries (blocks writes, checks tables/columns), executes via BigQuery REST API, returns JSON results with stats. | `sql`: SQL query<br>`maxResults`: Result limit (optional, max 10,000) |
 
 ## Testing & Evaluation
 

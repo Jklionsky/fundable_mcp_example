@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 /**
  * Available prompt keys
  */
-export type PromptKey = 'vc_analyst' | 'vc_analyst_eval' | 'test_mode_suffix' | 'holistic_evaluator' | 'default';
+export type PromptKey = 'vc_analyst' | 'vc_analyst_eval' | 'conversation_suffix'  |'test_mode_suffix' | 'holistic_evaluator' | 'default';
 
 /**
  * Prompt configuration structure
@@ -25,6 +25,7 @@ export type PromptKey = 'vc_analyst' | 'vc_analyst_eval' | 'test_mode_suffix' | 
 interface PromptConfig {
   vc_analyst: string;
   vc_analyst_eval: string;
+  conversation_suffix: string;
   test_mode_suffix: string;
   holistic_evaluator: string;
   default: string;

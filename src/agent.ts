@@ -72,9 +72,9 @@ export class AIAgent {
     // Create Vercel Agent with MCP tools
     this.agent = new Agent({
       model: this.model,
-      system: config?.systemPrompt || getPrompt('default'),
+      system: config?.systemPrompt || getPrompt('vc_analyst') + '\n' + getPrompt('conversation_suffix'),
       tools,
-      stopWhen: stepCountIs(config?.maxSteps || 15), // Allow multiple tool calls in sequence
+      stopWhen: stepCountIs(config?.maxSteps || 10), // Allow multiple tool calls in sequence
     });
 
     console.log("✓ Connected to MCP server");
