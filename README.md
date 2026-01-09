@@ -8,15 +8,27 @@ This project demonstrates how to build a command-line AI agent using Vercel's AI
 
 ## Table of Contents
 
+- [About the Fundable MCP](#about-the-fundable-mcp)
 - [Quick Start](#quick-start)
-- [Production Considerations](#️-production-considerations)
 - [Prerequisites & Setup](#prerequisites--setup)
 - [Running the Agent](#running-the-agent)
 - [Usage Examples](#usage-examples)
 - [Repository Structure](#repository-structure)
-- [About the Fundable MCP](#about-the-fundable-mcp)
 - [Testing & Evaluation](#testing--evaluation)
+- [Production Considerations](#️-production-considerations)
 - [License](#license)
+
+## About the Fundable MCP
+
+The Fundable MCP server exposes **5 tools** to query our BigQuery instance that holds 90k+ companies, 60k investors, and 800k people.
+
+| Tool | Purpose | Params |
+|------|---------|--------|
+| **getDatasetContext** | **Call at session start.** Returns complete dataset documentation: table schemas (DBML), business rules (monetary values in MILLIONS), and join patterns. | None |
+| **listDatasetTables** | Quick overview of all available tables in the dataset. | None |
+| **getQueryExamples** | Access 20+ example queries by category. Useful when unsure how to structure a query or after failed attempts. | `category`: Query category (e.g., "Funding Analysis", "People & Relationships") |
+| **getTableDetails** | Get column names, types, and constraints for a specific table. | `tableName`: Table to inspect |
+| **queryVCData** ⭐ | Execute read-only BigQuery SQL. Validates queries (blocks writes, checks tables/columns), executes via BigQuery REST API, returns JSON results with stats. | `sql`: SQL query<br>`maxResults`: Result limit (optional, max 10,000) |
 
 ## Quick Start
 
@@ -37,34 +49,6 @@ npm run test:connection
 # 5. Start the agent
 npm run dev
 ```
-
-## About the Fundable MCP
-
-The Fundable MCP server exposes **5 tools** to query our BigQuery instance that holds 90k+ companies, 60k investors, and 800k people. 
-
-| Tool | Purpose | Params |
-|------|---------|--------|
-| **getDatasetContext** | **Call at session start.** Returns complete dataset documentation: table schemas (DBML), business rules (monetary values in MILLIONS), and join patterns. | None |
-| **listDatasetTables** | Quick overview of all available tables in the dataset. | None |
-| **getQueryExamples** | Access 20+ example queries by category. Useful when unsure how to structure a query or after failed attempts. | `category`: Query category (e.g., "Funding Analysis", "People & Relationships") |
-| **getTableDetails** | Get column names, types, and constraints for a specific table. | `tableName`: Table to inspect |
-| **queryVCData** ⭐ | Execute read-only BigQuery SQL. Validates queries (blocks writes, checks tables/columns), executes via BigQuery REST API, returns JSON results with stats. | `sql`: SQL query<br>`maxResults`: Result limit (optional, max 10,000) |
-
-
-## ⚠️ Production Considerations
-
-This example uses relatively simple prompting to demonstrate MCP's core capabilities. **For production use, you should implement more advanced prompting techniques:**
-
-**Prompting Enhancements:**
-- **Return format specificity:** Add prompting for exact output schemas (JSON schema, markdown tables, structured data)
-- **Handling missing information:** Incorporate guardrails so agents know when to stop looking for information that isn't present in the dataset (e.g., some people only have linkedin url in dataset without previous education / employment history)
-- **Discovery questions:**  Implement disambiguation flows (e.g., "a16z" could mean a16z crypto, a16z speedrun, or a16z main fund)
-
-**Additional Considerations:**
-- Error handling for failed queries and API timeouts
-- Rate limiting and query throttling
-- Conversation persistence/resumption
-- Structured logging and cost monitoring
 
 ## Prerequisites & Setup
 
@@ -101,7 +85,7 @@ MCP_API_KEY=fundable_mcp_your-api-key-here
 # AI Provider (choose one)
 # ===========================================
 OPENAI_API_KEY=sk-your-api-key-here
-OPENAI_MODEL=gpt-5-mini  # Optional
+OPENAI_MODEL=gpt-5-mini 
 
 # GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
 # GOOGLE_MODEL=gemini-3-flash
@@ -120,16 +104,6 @@ OPENAI_MODEL=gpt-5-mini  # Optional
 **API Key**: Set `MCP_API_KEY` in your `.env` - no browser interaction required.
 
 **OAuth** (alternative): Remove `MCP_API_KEY` from `.env` and use `/mcp` endpoint. First connection will open a browser for GitHub login.
-
-### AI Provider Performance
-
-All models achieve similar overall accuracy, but differ in speed, cost, and tool efficiency:
-
-- **Google Gemini Flash 3**: Fastest inference, lowest cost, least efficient with tool use by a signficant margin espcially on tough questions
-- **OpenAI (gpt-5-mini)**: Similar cost to Gemini but 2x slower, more efficient tool usage
-- **Anthropic (Claude Sonnet 4.5)**: Most efficient tool usage, similar latency to OpenAI, higher cost
-
-*See `/tests/results` for sample test outputs across difficulty levels*
 
 ## Running the Agent
 
@@ -262,6 +236,31 @@ npm run test:eval -- --suite=hard --provider=google
 3. **Efficiency** - Within expected query budget (+2 tolerance)?
 
 **Results:** Stored in `tests/results/` as timestamped JSON with pass/fail grades, reasoning, and full traces.
+
+### AI Provider Performance
+
+All models achieve similar overall accuracy, but differ in speed, cost, and tool efficiency:
+
+- **Google Gemini Flash 3**: Fastest inference, lowest cost, least efficient with tool use by a signficant margin espcially on tough questions
+- **OpenAI (gpt-5-mini)**: Similar cost to Gemini but 2x slower, more efficient tool usage
+- **Anthropic (Claude Sonnet 4.5)**: Most efficient tool usage, similar latency to OpenAI, higher cost
+
+*See `/tests/results` for sample test outputs across difficulty levels*
+
+## ⚠️ Production Considerations
+
+This example uses relatively simple prompting to demonstrate MCP's core capabilities. **For production use, you should implement more advanced prompting techniques:**
+
+**Prompting Enhancements:**
+- **Return format specificity:** Add prompting for exact output schemas (JSON schema, markdown tables, structured data)
+- **Handling missing information:** Incorporate guardrails so agents know when to stop looking for information that isn't present in the dataset (e.g., some people in our dataset have linkedin urls but do not contain education / employment history - agent should know when to stop searching)
+- **Discovery questions:**  Implement disambiguation flows (e.g., "a16z" could mean a16z crypto, a16z speedrun, or a16z main fund)
+
+**Additional Considerations:**
+- Error handling for failed queries and API timeouts
+- Rate limiting and query throttling
+- Conversation persistence/resumption
+- Structured logging and cost monitoring
 
 ## License
 
