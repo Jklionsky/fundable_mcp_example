@@ -1,10 +1,10 @@
-# MCP AI Agent Example - Fundable VC Dataset
+# Fundable MCP AI Agent Example
 
 ## Overview
 
 This project demonstrates how to build a command-line AI agent using Vercel's AI SDK that connects to the Fundable MCP server to query a comprehensive VC dataset (companies, investors, people, funding rounds) using natural language.
 
-**Key Purpose:** This is intentionally a straightforward example showing what you can accomplish with MCP without complex prompting or extensive code modifications. The simplicity demonstrates MCP's power - **downstream users should add more advanced prompting techniques for production use** (see Production Considerations below).
+**Key Purpose:** This is intentionally a straightforward example showing what you can accomplish with the Fundable MCP without complex prompting, multi-tool use, or extensive code modifications. The simplicity demonstrates MCP's power - **downstream users should consider more advanced techniques for production use** (see Production Considerations below).
 
 ## Table of Contents
 
